@@ -1,0 +1,493 @@
+# AdForest Backend - 개발 가이드라인
+
+## 📋 프로젝트 정보
+
+**프로젝트명**: AdForest (광고 데이터 통합 플랫폼)
+**레포지토리**: triplehm-adinsight/adinsight-backend
+**배포 형태**: Docker + Nginx + Gunicorn (WSGI)
+
+## 🛠 기술 스택
+
+| 항목 | 버전 | 설명 |
+|------|------|------|
+| **Python** | 3.10+ (3.12 미만) | 코어 언어 |
+| **Django** | 5.0.4 | 웹 프레임워크 |
+| **DRF** | 3.15.1 | REST API 프레임워크 |
+| **Database** | PostgreSQL / MySQL | ORM: Django ORM |
+| **Cache** | Redis 5.4.0 | django-redis 사용 |
+| **패키지 관리** | uv | 고속 패키지 매니저 |
+| **Code Style** | Black 24.4.2 | 자동 코드 포매팅 |
+| **Lint** | ruff 0.9.6 | 정적 분석 도구 |
+| **Test** | pytest 8.4.1 | 단위/통합 테스트 |
+| **문서** | drf-spectacular | OpenAPI 문서 생성 |
+
+## 📁 주요 앱 구조
+
+```
+apps/
+├── admin_page/         # 어드민 페이지 API
+├── auto_report/        # 자동 보고서 생성
+├── common/             # 사용자 인증, 회원가입, 로그인
+├── custom_report/      # 커스텀 보고서 관리
+├── external/           # 외부 시스템 연동
+├── facebook/           # Meta(Facebook) API 통합
+├── ga4Data/            # Google Analytics 4 데이터
+├── googleads/          # Google Ads API 통합
+├── kakao/              # 카카오 광고 API 통합
+├── kakao_at/           # 카카오 알림톡 통합
+├── naver/              # 네이버 광고 API 통합
+├── payments/           # 결제 관리
+├── prediction_model/   # 예측 모델 (ROAS, 매출 예측)
+├── report/             # 보고서 CRUD
+└── schedule/           # 정기 수집 스케줄 관리
+
+config/
+├── settings/           # Django 설정 (local/dev/prod)
+├── urls.py             # 프로젝트 URL 라우팅
+└── asgi.py / wsgi.py   # 앱 진입점
+
+utils/
+├── auth/               # JWT, 인증 관련
+├── components/         # 공통 컴포넌트
+├── exceptions/         # 커스텀 예외
+└── decorators/         # 데코레이터
+
+services/              # 비즈니스 로직 계층
+scripts/               # 관리 명령어, 마이그레이션
+```
+
+## 🚀 빠른 시작
+
+### 환경 설정
+
+```bash
+# Python 버전 확인 (3.10 이상, 3.12 미만)
+python --version
+
+# 의존성 설치 (uv 사용)
+uv sync
+
+# 환경 변수 설정
+export stage=local  # 또는 dev, prod
+```
+
+### 데이터베이스 초기화
+
+```bash
+# 마이그레이션 생성
+uv run python manage.py makemigrations
+
+# 마이그레이션 적용
+uv run python manage.py migrate
+
+# 슈퍼유저 생성
+uv run python manage.py createsuperuser
+```
+
+### 로컬 서버 실행
+
+```bash
+# 개발 서버 실행 (자동 리로드)
+uv run python manage.py runserver 0.0.0.0:8000
+
+# Swagger/Redoc 문서 확인
+# http://localhost:8000/api/schema/swagger-ui/
+# http://localhost:8000/api/schema/redoc/
+```
+
+---
+
+## 🔧 개발 규칙
+
+### 1️⃣ 코드 작성 규칙
+
+#### 1.1 코드 스타일
+```bash
+# Black으로 코드 포매팅
+uv run black apps/ config/ utils/
+
+# Ruff 린트 체크 및 수정
+uv run ruff check --fix apps/ config/ utils/
+
+# 모든 검사 한 번에
+uv run pre-commit run --all-files
+```
+
+- **PEP 8** 준수
+- **Black** 자동 포매팅 (line-length: 140)
+- **Ruff** 정적 분석
+
+#### 1.2 함수/변수 네이밍
+```python
+def get_user_by_email(email: str) -> User:
+    """이메일로 사용자 조회"""
+    pass
+
+class CustomAuthSerializer(serializers.Serializer):
+    pass
+
+REDIS_CACHE_TIMEOUT = 3600
+```
+
+- **함수**: `snake_case`
+- **클래스**: `PascalCase`
+- **상수**: `UPPER_SNAKE_CASE`
+
+#### 1.3 함수 작성
+```python
+def process_google_ads_data(ad_account_id: int) -> dict:
+    """
+    Google Ads 데이터 처리.
+
+    Args:
+        ad_account_id: 광고계정 ID
+
+    Returns:
+        처리된 광고 성과 데이터
+    """
+    pass
+```
+
+- **SRP** (Single Responsibility) 준수
+- **함수 길이**: 최대 50줄
+- **Docstring 필수**: 파라미터, 반환값 명시
+- **타입 힌팅** 필수
+
+#### 1.4 로그 작성
+```python
+import logging
+
+logger = logging.getLogger(__name__)
+
+logger.debug("디버깅: user_id={}", user_id)
+logger.info("정상: 사용자 로그인 완료")
+logger.warning("경고: API 응답 시간 초과")
+logger.error("에러: DB 연결 실패", exc_info=True)
+```
+
+- **Python logging 모듈** 필수 (print 금지)
+- **레벨 구분**: DEBUG → INFO → WARNING → ERROR
+- **Logger 이름**: `__name__` 기반
+
+#### 1.5 에러 처리
+```python
+from rest_framework.exceptions import ValidationError, NotFound
+
+# ❌ 나쁜 예
+try:
+    user = User.objects.get(id=user_id)
+except:
+    pass
+
+# ✅ 좋은 예
+try:
+    user = User.objects.get(id=user_id)
+except User.DoesNotExist:
+    raise NotFound("User not found")
+except Exception as e:
+    logger.error(f"Unexpected error: {str(e)}")
+    raise
+```
+
+- **명확한 예외**: `ValidationError`, `NotFound`, `PermissionDenied`
+- **try-except 남발 금지**
+- **로깅 후 raise**
+
+#### 1.6 Django ORM 최적화
+```python
+# ❌ N+1 쿼리
+users = User.objects.all()
+for user in users:
+    print(user.profile.bio)
+
+# ✅ select_related / prefetch_related
+users = User.objects.select_related('profile').all()
+ad_accounts = AdAccount.objects.prefetch_related('media_links').filter(user=user)
+```
+
+- **select_related**: ForeignKey, OneToOneField (JOIN)
+- **prefetch_related**: ManyToManyField, reverse ForeignKey
+
+#### 1.7 보안 (최우선)
+```python
+# ❌ 민감 정보 노출 금지
+API_KEY = "sk-1234567890"
+PASSWORD = "admin123"
+
+# ✅ 환경 변수
+import os
+API_KEY = os.environ.get("API_KEY")
+
+# API 응답에서 민감 정보 제외
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['id', 'email', 'name']  # password 제외
+```
+
+- **입력 값 검증**: Serializer validation 필수
+- **민감 정보 제외**: API response, 로그
+- **권한 검사**: permission_classes, IsAuthenticated
+
+---
+
+### 2️⃣ 테스트 규칙
+
+#### 2.1 테스트 작성 필수
+```bash
+# 테스트 실행
+uv run pytest apps/ -v
+
+# 커버리지 확인 (목표: 80%)
+uv run pytest --cov=apps --cov-report=html
+```
+
+모든 신규 및 수정 기능에 대해 테스트 필수
+
+#### 2.2 테스트 작성 예시
+```python
+from django.test import TestCase
+from rest_framework.test import APIClient
+
+class TestUserAuthentication(TestCase):
+
+    def setUp(self):
+        self.client = APIClient()
+
+    def test_login_success(self):
+        """✅ 정상 로그인"""
+        response = self.client.post('/api/auth/login/', {
+            'email': 'user@example.com',
+            'password': 'password123'
+        })
+        assert response.status_code == 200
+
+    def test_login_with_invalid_email(self):
+        """❌ 유효하지 않은 이메일"""
+        response = self.client.post('/api/auth/login/', {
+            'email': 'invalid-email',
+            'password': 'password123'
+        })
+        assert response.status_code == 400
+```
+
+- **성공 + 실패 케이스** 모두 작성
+- **경계값** 테스트 (null, 빈 값)
+- **권한 검사** 테스트
+
+#### 2.3 Mock / Fixture
+```python
+import pytest
+from unittest.mock import patch
+
+@pytest.fixture
+def sample_user():
+    return User.objects.create_user(
+        email='test@example.com',
+        password='password123'
+    )
+
+@patch('apps.facebook.api.get_access_token')
+def test_facebook_connection(mock_get_token, sample_user):
+    mock_get_token.return_value = 'fake-token'
+    result = connect_facebook(sample_user)
+    assert result is not None
+```
+
+- **외부 API**: @patch로 모킹
+- **Fixture**: 공통 테스트 데이터
+- **테스트 DB**: 자동 격리
+
+---
+
+### 3️⃣ 커밋 및 PR 규칙
+
+#### 3.1 커밋 메시지
+```
+형식: :emoji: scope: subject
+
+✨ api: add Google Ads data collection API
+🐛 fix: resolve N+1 query issue
+♻️ refactor: split AdAccountViewSet
+📝 docs: update API documentation
+✅ test: add email validation tests
+⚙️ chore: update dependencies
+```
+
+| 깃모지 | 의미 | 예시 |
+|--------|------|------|
+| ✨ | 새 기능 | `✨ api: add authentication` |
+| 🐛 | 버그 수정 | `🐛 fix: handle null values` |
+| ♻️ | 리팩터링 | `♻️ refactor: extract logic` |
+| 📝 | 문서 | `📝 docs: update guide` |
+| ✅ | 테스트 | `✅ test: add tests` |
+| ⚙️ | 설정 | `⚙️ chore: update deps` |
+| 🔐 | 보안 | `🔐 security: prevent injection` |
+
+#### 3.2 PR 체크리스트
+- [ ] 단위 테스트 작성 (80%+ 커버리지)
+- [ ] Black 포매팅 적용
+- [ ] Ruff 린트 통과
+- [ ] API 문서 업데이트
+- [ ] 마이그레이션 생성 (필요시)
+- [ ] 미사용 코드 제거
+- [ ] 시크릿 파일 커밋 X
+
+#### 3.3 브랜치 전략
+```
+main (프로덕션)
+  ↑
+dev (개발)
+  ↑
+feature/* (기능 개발)
+```
+
+명명: `feature/add-google-ads-api`
+
+#### 3.4 병합 규칙
+- 최소 1명 이상 리뷰 승인
+- 모든 테스트 통과
+- Squash merge 권장
+
+---
+
+### 4️⃣ 문서화 규칙
+
+#### 4.1 API 문서
+```python
+from drf_spectacular.utils import extend_schema
+
+class UserViewSet(viewsets.ModelViewSet):
+    @extend_schema(
+        description="사용자 목록 조회",
+        summary="사용자 리스트",
+        tags=["Users"]
+    )
+    def list(self, request):
+        pass
+```
+
+- DRF Swagger/Redoc 자동 생성
+- 모든 endpoint: 설명, request/response 예시
+
+#### 4.2 Docstring
+```python
+def calculate_roi(cost: float, revenue: float) -> float:
+    """
+    ROI(투자 수익률) 계산.
+
+    🎯 Args:
+        cost: 광고비 (원)
+        revenue: 매출액 (원)
+
+    🎈 Returns:
+        ROI 값 (백분율)
+
+    ✨ Example:
+        >>> calculate_roi(1000, 5000)
+        400.0
+    """
+    return ((revenue - cost) / cost) * 100
+```
+
+- 모든 public 함수/클래스: Docstring 필수
+- 파라미터, 반환값, 예외 명시
+
+---
+
+## ⚠️ 절대 금지 사항
+
+### 🚫 민감 정보 노출
+```python
+# ❌ 절대 금지
+SECRET_KEY = "django-insecure-xyz"
+DATABASE_PASSWORD = "password123"
+API_KEY = "sk-1234567890"
+```
+
+- 환경 변수/Secrets Manager로 관리
+
+### 🚫 무분별한 출력
+```python
+# ❌ 절대 금지
+print(f"User: {user_data}")
+
+# ✅ 올바른 예
+logger.debug(f"Processing user: {user.id}")
+```
+
+- `print()` 디버깅 출력 제거
+- 로깅 모듈만 사용
+
+### 🚫 하드코딩 경로
+```python
+# ❌ 절대 금지
+s3_bucket = "my-bucket-prod"
+
+# ✅ 올바른 예
+s3_bucket = os.environ.get("S3_BUCKET")
+```
+
+### 🚫 검증 안 된 코드 배포
+- 실험 코드를 main/master에 병합 금지
+- 모든 코드는 리뷰 및 테스트 필수
+- CI/CD 파이프라인 통과 필수
+
+---
+
+## 📚 권장 사항
+
+### ✅ 환경 변수 관리
+```bash
+# .env 파일 (git 제외)
+stage=local
+DATABASE_URL=postgresql://...
+REDIS_PASSWORD=...
+SECRET_KEY=...
+```
+
+### ✅ 코드 리뷰 필수
+- 주요 기능 변경 시 리뷰
+- 보안 관련 변경 필수 리뷰
+- 팀과의 지식 공유
+
+### ✅ 문서화 유지
+- README, API 문서 최신화
+- 마이그레이션 방법 기록
+- 주요 기능 설명
+
+### ✅ 모니터링
+```bash
+# 로그 레벨
+DEBUG: 개발 중 상세 정보
+INFO: 일반적인 작동 정보
+WARNING: 경고 (지속 가능하지만 주의)
+ERROR: 에러 (즉시 조치 필요)
+```
+
+---
+
+## 🎯 문제 해결 우선순위
+
+1. **🔴 보안** (최우선) - 민감 정보, 권한, 인증
+2. **🟠 장애** - 기능 오류, 서버 에러
+3. **🟡 성능** - 쿼리 최적화, 메모리
+4. **🟢 코드 품질** - 리팩터링, 테스트
+5. **🔵 편의성** - 스타일, 주석
+
+---
+
+## 📌 중요 파일
+
+| 파일 | 설명 |
+|------|------|
+| `config/settings/base.py` | 프로젝트 기본 설정 |
+| `etc/properties.json` | 환경 설정, API 키 (git 제외) |
+| `pyproject.toml` | 의존성, 린트/테스트 설정 |
+| `pytest.ini` | pytest 설정 |
+| `README.md` | 프로젝트 설명 |
+
+---
+
+**마지막 업데이트**: 2025-11-25
+**작성자**: 김경환PM
