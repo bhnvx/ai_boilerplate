@@ -1,0 +1,75 @@
+{
+    "python.analysis.inlayHints.variableTypes": true,
+    "python.analysis.inlayHints.functionReturnTypes": true,
+    "files.trimTrailingWhitespace": true,
+    "files.insertFinalNewline": true,
+    "python.analysis.diagnosticMode": "openFilesOnly",
+    "python.analysis.diagnosticSeverityOverrides": {
+        "reportMissingTypeArgument": "none",
+        "reportUnknownArgumentType": "none"
+    },
+    "python.languageServer": "Pylance",
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+
+    "workbench.iconTheme": "material-icon-theme",
+    "editor.defaultFormatter": "ms-python.black-formatter",
+    "[shellscript]": {
+        "editor.defaultFormatter": "foxundermoon.shell-format"
+    },
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "files.exclude": {
+        "**/.*cache": true,
+        "**/.idea": true,
+        "**/.venv": true,
+    },
+    "[dockerfile]": {
+        "editor.defaultFormatter": "foxundermoon.shell-format"
+    },
+    "[dotenv]": {
+        "editor.defaultFormatter": "foxundermoon.shell-format"
+    },
+    "[ignore]": {
+        "editor.defaultFormatter": "foxundermoon.shell-format"
+    },
+    "files.eol": "\n",
+    "editor.tokenColorCustomizations": {
+
+        "[*Light*]": {
+            "textMateRules": [
+                {
+                    "scope": "ref.matchtext",
+                    "settings": {
+                        "foreground": "#000"
+                    }
+                }
+            ]
+        },
+        "[*Dark*]": {
+            "textMateRules": [
+                {
+                    "scope": "ref.matchtext",
+                    "settings": {
+                        "foreground": "#fff"
+                    }
+                }
+            ]
+        }
+    },
+    "editor.codeActionsOnSave": {
+
+    },
+    "claudeCode.environmentVariables": [
+
+
+    ],
+    "editor.formatOnPaste": true,
+    "black-formatter.args": [
+        "--line-length 140",
+        "--skip-string-normalization",
+        "--target-version py310",
+        "--exclude '/(\\.git|\\.mypy_cache|\\.pytest_cache|build|dist|migrations|\\.venv|venv)/'"
+    ],
+    "editor.formatOnSave": true
+}
