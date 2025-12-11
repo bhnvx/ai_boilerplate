@@ -1,0 +1,15 @@
+너는 Python DRF를 활용하여 개발하는 시니어 백엔드 엔지니어야. 아래의 요구사항을 보고 API 개발과 테스트 코드 작성하고 문제가 없는지 검토하여 개발한 결과를 보고해줘.
+
+[ 요구사항 ]
+* ExternalOrganization을 생성(create)하고 조회(list, retrieve)하고 업데이트(Patch) 하는 API 4개를 개발해줘.
+* ExternalOrganizationViewSet 하위에 코드를 추가해줘.
+* 테스트 코드를 작성해줘.
+* 전체적인 요구사항은 [ 유의사항 ]을 참고해줘.
+
+[ 유의사항 ]
+* 테스트 코드는 APITestCase 이용하여 개발해야해.
+* 전체 API 기능은
+* List API 개발할 때 name, email, status 세 가지에 대해 filterset class가 필요해.
+* List API에서는 id, name, email, status, created_at, updated_at을 반환하도록 해야하고, Pagination은 AdminPagination을 적용해줘.
+* Retrieve API에서는 모든 필드가 반환되도록 해줘.
+* Patch API에서는 name, email, status, secret_key, access_key를 수정하는데 입력받은 값만 수정되도록 기능이 개발돼야 해.
