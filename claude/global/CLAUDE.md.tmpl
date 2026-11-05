@@ -1,0 +1,30 @@
+# 전역 작업 지침
+<!-- ~/.claude/CLAUDE.md 로 설치된다. 원본은 dev_settings 저장소의 claude/global/CLAUDE.md.tmpl — 저장소에서 고친 뒤 install.sh를 다시 실행한다. -->
+
+## 사용자
+- 한국어를 쓰는 백엔드 개발자·PM. 여러 웹 솔루션 프로젝트(백엔드 API·프런트·DB)를 함께 다룬다.
+
+## 응답
+- 응답·보고·문서는 한국어로 쓴다. 코드·식별자·커밋 subject는 영어로 쓴다.
+
+## 우선순위
+- 사용자 지시 > 프로젝트 CLAUDE.md·.claude/rules > 전역 rules(~/.claude/rules/)
+
+## 전역 규칙 (~/.claude/rules/, 항상 로드)
+- core.md — 작업 방식: 검증한 것만 완료, 요청 범위 준수, 플랜·완료 보고 형식
+- git.md — 커밋 메시지·브랜치·PR 규칙
+- security.md — 비밀 파일·개인정보·운영 접근·외부 전송
+- web.md — 웹 솔루션 공통 원칙(API·인증·데이터·관측·테스트·프런트)
+- subagent-policy.md — 서브에이전트 위임·검토·모델 선택
+
+## 스킬
+- `/commit [파일...]` — 컨벤션에 맞춰 커밋(파일 지정, 푸시 안 함)
+- `/review-diff [base-ref | 파일...]` — 변경분 독립 리뷰(reviewer 위임)
+- `/delegate [에이전트] [목표]` — 서브에이전트 위임 프롬프트 작성
+- `/api [요구사항]` — API 엔드포인트 명세 → 구현 → 테스트
+- `/preflight [base-ref]` — PR 전 점검(린트·테스트·마이그레이션·env·시크릿)
+- `/harness-check` — 설치된 하네스 검증
+- `/harness-init [프로필]` — 현재 프로젝트에 템플릿 적용
+
+## 프로젝트 시작
+- 프로젝트에 CLAUDE.md가 없으면 `/harness-init`을 제안한다.

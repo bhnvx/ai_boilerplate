@@ -1,0 +1,13 @@
+{
+  "hook_event_name": "Status",
+  "session_id": "test-session",
+  "cwd": "/tmp/example-project",
+  "model": { "id": "claude-opus-5-5", "display_name": "Opus 5.5" },
+  "workspace": { "current_dir": "/tmp/example-project" },
+  "cost": { "total_cost_usd": 0.5 },
+  "context_window": { "total_input_tokens": 50000, "context_window_size": 200000, "used_percentage": null },
+  "rate_limits": {
+    "five_hour": { "used_percentage": 83.2, "resets_at": 1762333200 },
+    "seven_day": { "used_percentage": 55, "resets_at": 1762851600 }
+  }
+}

@@ -22,7 +22,7 @@
     "files.exclude": {
         "**/.*cache": true,
         "**/.idea": true,
-        "**/.venv": true,
+        "**/.venv": true
     },
     "[dockerfile]": {
         "editor.defaultFormatter": "foxundermoon.shell-format"

@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "language": "korean",
+  "worktree": { "baseRef": "head" },
+  "permissions": {
+    "allow": [
+      "Bash(jq *)",
+      "Bash(gh pr view *)", "Bash(gh pr list *)", "Bash(gh pr diff *)", "Bash(gh pr checks *)",
+      "Bash(gh issue view *)", "Bash(gh issue list *)", "Bash(gh run list *)", "Bash(gh run view *)",
+      "WebFetch(domain:code.claude.com)", "WebFetch(domain:docs.anthropic.com)", "WebFetch(domain:github.com)", "WebFetch(domain:raw.githubusercontent.com)"
+    ],
+    "deny": [
+      "Read(//**/.env)", "Read(//**/.env.local)", "Read(//**/.env.*.local)",
+      "Read(//**/.env.production)", "Read(//**/.env.prod)", "Read(//**/.env.staging)", "Read(//**/.env.development)", "Read(//**/.env.dev)", "Read(//**/.envrc)",
+      "Read(//**/*.pem)", "Read(//**/*.key)", "Read(//**/*.p12)", "Read(//**/*.pfx)", "Read(//**/*.jks)", "Read(//**/*.keystore)", "Read(//**/*.kdbx)",
+      "Read(//**/id_rsa)", "Read(//**/id_ed25519)", "Read(//**/id_ecdsa)", "Read(//**/id_dsa)",
+      "Read(//**/credentials.json)", "Read(//**/service-account*.json)", "Read(//**/.git-credentials)",
+      "Read(~/.netrc)", "Read(~/.npmrc)", "Read(~/.pypirc)",
+      "Read(~/.ssh/**)", "Read(~/.aws/**)", "Read(~/.config/gcloud/**)", "Read(~/.kube/**)", "Read(~/.gnupg/**)", "Read(~/.docker/config.json)", "Read(~/.claude/.credentials.json)",
+      "Read(~/.config/gh/hosts.yml)", "Read(~/.vault-token)", "Read(~/.cargo/credentials*)", "Read(~/.terraform.d/credentials*)",
+      "Read(~/.huggingface/token)", "Read(~/.cache/huggingface/token)", "Read(~/.azure/**)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|MultiEdit|NotebookEdit|Grep|Bash|Monitor",
+        "hooks": [ { "type": "command", "command": "\"$HOME\"/.claude/hooks/run-hook.sh guard-secrets", "timeout": 10, "statusMessage": "비밀 파일 접근 검사" } ]
+      },
+      {
+        "matcher": "Bash|Monitor",
+        "hooks": [ { "type": "command", "command": "\"$HOME\"/.claude/hooks/run-hook.sh guard-destructive", "timeout": 10, "statusMessage": "위험 명령 검사" } ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash|Monitor",
+        "hooks": [ { "type": "command", "command": "\"$HOME\"/.claude/hooks/run-hook.sh guard-migrations", "timeout": 10, "statusMessage": "마이그레이션 보호 검사" } ]
+      }
+    ],
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "\"$HOME\"/.claude/hooks/run-hook.sh session-context", "timeout": 10 } ] }
+    ]
+  },
+  "statusLine": { "type": "command", "command": "\"$HOME\"/.claude/hooks/statusline.sh", "padding": 0 }
+}

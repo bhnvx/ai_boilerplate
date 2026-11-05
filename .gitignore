@@ -1,0 +1,7 @@
+.DS_Store
+*.dev_settings.new
+/.claude/settings.local.json
+/CLAUDE.local.md
+tests/.tmp/
+__pycache__/
+*.pyc

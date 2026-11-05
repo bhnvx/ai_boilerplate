@@ -1,0 +1,11 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "env": {
+    "CLAUDE_GUARD_PROTECTED_BRANCHES": "none"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(docker compose ps *)"
+    ]
+  }
+}

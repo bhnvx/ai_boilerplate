@@ -1,0 +1,44 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 도구 버전
+        run: |
+          /bin/bash --version | head -n 1
+          bash --version | head -n 1
+          python3 --version
+          jq --version || echo 'jq 없음'
+          git --version
+
+      - name: 테스트 (tests/run-all.sh)
+        run: bash tests/run-all.sh
+
+      - name: 하네스 검증 (scripts/validate.sh --repo)
+        run: bash scripts/validate.sh --repo --quiet
+
+      - name: 비밀·개인정보 검사
+        run: |
+          hits=$(grep -rEn '(AKIA[0-9A-Z]{16}|-----BEGIN [A-Z ]*PRIVATE KEY|[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[a-z]{2,})' \
+            --exclude-dir=.git . | grep -vE 'noreply@anthropic\.com|example\.com' || true)
+          if [ -n "$hits" ]; then
+            printf '%s\n' "$hits"
+            echo '비밀 키 또는 이메일로 보이는 문자열 발견 — 제거하거나 example.com 으로 바꿀 것'
+            exit 1
+          fi
+          echo '비밀·이메일 없음'

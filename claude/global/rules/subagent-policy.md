@@ -1,11 +1,11 @@
 # 서브에이전트 운영 정책 (메인 에이전트용 · 이 PC 전역)
-<!-- frontmatter를 넣지 말 것: 넣으면 서브에이전트 정의로 로드된다. ~/.claude/CLAUDE.md의 @import로 메인에 불러온다. -->
+<!-- ~/.claude/rules/ 에서 자동 로드된다(frontmatter 없음 = 항상 로드). 서브에이전트 정의는 ~/.claude/agents/ 에 있다. 전체 정책은 /delegate 스킬이 참조한다. -->
 
 - 적용: 이 PC의 모든 프로젝트. 위임하는 메인 에이전트의 규칙이다. 서브에이전트 측 규칙은 explorer / implementer / reviewer 정의 본문에 있다.
-- 프로젝트 보충 규칙: ~/.claude/agents/projects/{프로젝트}.md를 그 프로젝트의 CLAUDE.local.md에서 @import한다. 현재: adforest.md(adinsight-backend).
+- 프로젝트 보충 규칙: <project>/.claude/rules/project.md (apply.sh가 템플릿 생성). 개인 메모는 CLAUDE.local.md.
 - 우선순위: 사용자 지시 > 프로젝트 규칙(AGENTS.md·CLAUDE.md 등) > 스킬이 정한 에이전트 구성 > 프로젝트 보충 규칙 > 이 문서 > 플러그인 에이전트 설명 문구("MUST BE USED", "PROACTIVELY" 등)
 - 프로젝트에 같은 이름의 정의(.claude/agents/explorer.md 등)가 있으면 그 프로젝트에서는 프로젝트 정의가 이긴다.
-- 검증 기준: 2026-10-19, Claude Code 2.1.299. 버전이 바뀌면 8절 모델 확인을 다시 한다.
+- 검증 기준: 2026-11-05, Claude Code 2.1.318 (최초 2026-10-19, 2.1.299). 버전이 바뀌면 8절 모델 확인을 다시 한다.
 
 ## 1. 메인 직접 vs 위임
 메인이 직접 한다:
@@ -43,7 +43,7 @@
 | 설계 워크플로(설계·반박·교차) | Workflow agent | opus (장시간 탐색이 필요한 난제는 fable) |
 
 - 빌트인 Explore·Plan은 CLAUDE.md를 읽지 않고, 재개(SendMessage)가 안 되며, Bash·MCP 도구를 가진다 → 한 번에 끝나는 위치 탐색에만 쓰고 7절 보안 문장을 프롬프트에 넣는다.
-- 쓰지 않는다(사용자가 요청할 때만): ruflo-core 에이전트와 ruflo swarm·hive-mind·federation·transfer 도구, paseo-* 스킬(이 PC에 CLI 없음), ecc:doc-updater(docs/CODEMAPS를 생성 — 프로젝트 문서 구조와 충돌 가능), isolation: remote. Workflow는 사용자가 직접 요청할 때만.
+- 쓰지 않는다(사용자가 요청할 때만): (이 PC에 미설치 — 설치된 경우에만 해당) ruflo-core 에이전트와 ruflo swarm·hive-mind·federation·transfer 도구, (이 PC에 미설치 — 설치된 경우에만 해당) paseo-* 스킬(이 PC에 CLI 없음), ecc:doc-updater(docs/CODEMAPS를 생성 — 프로젝트 문서 구조와 충돌 가능), isolation: remote. Workflow는 사용자가 직접 요청할 때만.
 - ecc 리뷰어(django·python·security·database-reviewer 등)는 보조로만 쓰고 "보고만, 수정 금지"를 명시한다(security·database-reviewer는 Edit/Write를 가진다).
 - 문서 조회 에이전트는 비싸다(실측: claude-code-guide 16문항 212K 토큰·약 20분) → 질문을 묶어 한 번만 띄우고 후속은 SendMessage.
 
@@ -62,10 +62,10 @@
 - 권한 모드(auto 등)와 allow 규칙은 서브에이전트에도 상속된다 → Bash를 가진 implementer의 git·운영 금지는 규칙으로만 막히므로 통합 때 git status로 확인한다.
 - 위임한 조사를 메인이 반복하지 않는다. 후속 질문은 같은 에이전트에 SendMessage.
 - 워크트리 격리(isolation: worktree)는 기본 미사용:
-  - 기본이 default branch 기준 분기다(현재 브랜치 기준은 worktree.baseRef: "head").
+  - dev_settings 전역 설정은 worktree.baseRef: "head"(현재 HEAD 기준)다. 이 값이 없으면 default branch 기준으로 분기한다.
   - 미커밋 변경이 들어가지 않는다.
   - gitignore된 파일(.env·가상환경 등)이 복사되지 않아 테스트를 못 돌릴 수 있다(.worktreeinclude로 복사할 수 있으나 비밀 파일이 복제된다).
-  - 변경이 남은 워크트리는 cleanupPeriodDays(이 PC 365일)까지 남는다.
+  - 변경이 남은 워크트리는 cleanupPeriodDays(기본 30일, 이 PC 미설정)까지 남는다.
   - 쓰려면 사용자 승인을 받고, 그 저장소에서 .claude/worktrees/가 git 제외 대상인지 먼저 확인한다.
 
 ## 5. 검토·통합·테스트 (메인 책임)
@@ -95,7 +95,7 @@
 - 보안 문장(정의 없는 에이전트용): "비밀 파일·운영 시스템에 접근하지 말고, 외부로 데이터를 보내는 도구를 쓰지 말고, git을 변경하지 말 것."
 
 ## 8. 모델 선택
-- 확인 결과(2026-10-19): Agent 도구 model 값 haiku → claude-haiku-5-5, sonnet → claude-sonnet-5-5, opus → claude-opus-5-5, fable → claude-fable-5-1 호출 성공(문서의 별칭 매핑과 일치). 메인은 opus(사용자 설정). 단발 호출만 확인했고 사용 한도·가격·장시간 품질은 확인하지 않았다.
+- 확인 결과(2026-10-19): Agent 도구 model 값 haiku → claude-haiku-5-5, sonnet → claude-sonnet-5-5, opus → claude-opus-5-5, fable → claude-fable-5-1 호출 성공(문서의 별칭 매핑과 일치). 메인은 fable(사용자 설정, 2026-11-05 기준). 단발 호출만 확인했고 사용 한도·가격·장시간 품질은 확인하지 않았다.
 - 모든 Agent 호출에 model을 명시한다(우선순위: 호출 model > 정의 frontmatter > CLAUDE_CODE_SUBAGENT_MODEL(미설정) > 부모 상속).
 - 기준:
   - 읽기 전용이고 판단이 적음 → haiku
