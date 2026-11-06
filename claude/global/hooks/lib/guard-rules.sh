@@ -79,7 +79,7 @@ gd_db_orm() {  # ORM/마이그레이션 도구의 파괴적 작업(머리와 무
     *'manage.py dbshell'*|*'manage.py flush'*|*'manage.py sqlflush'*|*'manage.py reset_db'*) gd_shit 2 db "DB 초기화/셸" ;;
     *'manage.py migrate'*|*'django-admin migrate'*) case " $S_M " in *' zero '*) gd_shit 2 db "마이그레이션 전체 되돌리기(zero)" ;; esac ;;
     *'prisma migrate reset'*|*'prisma db push'*--force-reset*|*'prisma db execute'*) gd_shit 2 db "Prisma DB 초기화/직접 실행" ;;
-    *'alembic downgrade'*|*'flask db downgrade'*) gd_shit 2 db "alembic downgrade" ;;
+    *'alembic downgrade'*|*'flask db downgrade'*) case " $S_M " in *' --sql '*) ;; *) gd_shit 2 db "alembic downgrade" ;; esac ;;   # --sql: SQL 출력만(오프라인)
     *'db:drop'*|*'db:reset'*|*'db:schema:load'*|*'db:purge'*|*'db:rollback'*|*'db:migrate:reset'*|*'db:migrate:undo'*|*'db:migrate:down'*|*'db:wipe'*) gd_shit 2 db "DB 삭제/초기화/마이그레이션 롤백($S_HEAD)" ;;
     *'knex migrate:rollback'*|*'knex migrate:down'*|*'typeorm schema:drop'*|*'migration:revert'*|*'mikro-orm migration:down'*|*'mikro-orm schema:drop'*) gd_shit 2 db "마이그레이션 롤백/스키마 삭제" ;;
     *flyway*' clean'*|*'goose down'*|*'goose '*' down'*|*'goose reset'*|*'goose '*' reset'*|*'dbmate drop'*|*'dbmate '*' drop'*|*'dbmate rollback'*|*'dbmate '*' rollback'*|*'dbmate down'*|*'dbmate '*' down'*|*'sqlx database drop'*|*'sqlx migrate revert'*|*'atlas schema clean'*|*'drizzle-kit drop'*|*'supabase db reset'*|*liquibase*' rollback'*|*liquibase*' dropall'*|*liquibase*' drop-all'*) gd_shit 2 db "마이그레이션 롤백/스키마 삭제($S_HEAD)" ;;

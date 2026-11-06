@@ -123,6 +123,10 @@ gm_segment() {  # <masked> <raw>
     case $m in *migrat*|*alembic*|*prisma*|*'db:'*|*knex*|*drizzle*|*flyway*|*goose*|*dbmate*|*sqlx*|*atlas*|*rails*|*rake*|*sequelize*|*typeorm*|*supabase*|*liquibase*|*artisan*|*mikro-orm*|*'flask db'*)
       case $m in *downgrade*|*rollback*|*' reset'*|*--force-reset*|*'db:drop'*|*'db:reset'*|*' clean'*|*'migrate:fresh'*|*'db:wipe'*|*'migrate:undo'*|*'migration:revert'*|*'goose down'*|*'dbmate drop'*|*'dbmate down'*|*'database drop'*|*'migrate revert'*|*'schema clean'*|*'drizzle-kit drop'*|*'knex migrate:down'*|*'db reset'*|*'schema:drop'*|*' dropall'*|*' zero'*) apply=0; destructive=1 ;; esac ;;
     esac
+    # alembic·Flask-Migrate 오프라인 모드(--sql)는 DB에 접속하지 않고 SQL 만 출력한다 → 적용·롤백이 아니다
+    case $m in *'alembic upgrade'*|*'alembic downgrade'*|*'flask db upgrade'*|*'flask db downgrade'*)
+      case " $m " in *' --sql '*) apply=0; destructive=0 ;; esac ;;
+    esac
   fi
   if [ "$create" -eq 1 ] || [ "$apply" -eq 1 ] || [ "$delete" -eq 1 ] || [ "$edit" -eq 1 ] || [ "$destructive" -eq 1 ]; then
     [ "$GM_SUB" -eq 1 ] && { gm_hit 3 migrations:subagent "$GM_SUBAGENT_REASON: $ex"; return 0; }

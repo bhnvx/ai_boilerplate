@@ -227,4 +227,10 @@ t_under "100KB quoted word" $((t1 - t0)) 2000
 t0=$(t_ms); run "$(t_bash_json_file "$T_TMP/cmd.txt")"; t1=$(t_ms)
 assert_decision "200KB unquoted word then rm -rf ~ → deny" deny
 t_under "200KB unquoted word + rm" $((t1 - t0)) 2000
+
+t_section "alembic·Flask-Migrate 오프라인 모드(--sql)"
+tb 'alembic downgrade --sql → none' none 'alembic downgrade -1 --sql'
+tb 'flask db downgrade --sql → none' none 'flask db downgrade --sql > down.sql'
+tb 'alembic downgrade (online) → ask' ask 'uv run alembic downgrade -1'
+tb 'offline then online downgrade → ask' ask 'alembic downgrade -1 --sql > d.sql; alembic downgrade -1'
 t_report

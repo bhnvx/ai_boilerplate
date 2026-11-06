@@ -131,7 +131,7 @@ cd ~/vsc/dev_settings
 - 명령 머리의 따옴표·백슬래시·대소문자 변형(`"rm" -rf`, `r\m`, `RM`, `SUDO rm`)은 같은 규칙으로 판정한다. heredoc 본문은 1 MB까지 검사하고(코드 heredoc은 비밀 파일 경로만), 200 KB heredoc 처리에 약 0.3초가 든다.
 - `uv run --env-file .env …`·`docker compose --env-file .env …`는 실행 자체는 통과하지만, 그 명령이 환경을 출력·덤프하면(`env`, `printenv`, `python -c 'print(os.environ)'` 등) deny다.
 - `git config [--global] core.hooksPath <경로>`는 ask(훅 우회)다. `.husky`·`.githooks`·`.git/hooks`·`.hooks`·`.lefthook*` 같은 저장소 안의 관례적 경로는 통과한다.
-- DB 마이그레이션 롤백·리셋·초기화(`flyway clean`, `rails db:rollback`, `artisan migrate:fresh`, `supabase db reset` 등)의 ask(high)는 `guard-destructive`가, 서브에이전트일 때의 deny는 `guard-migrations`가 담당한다. `makemigrations --check`·`--dry-run`은 생성으로 보지 않는다.
+- DB 마이그레이션 롤백·리셋·초기화(`flyway clean`, `rails db:rollback`, `artisan migrate:fresh`, `supabase db reset` 등)의 ask(high)는 `guard-destructive`가, 서브에이전트일 때의 deny는 `guard-migrations`가 담당한다. `makemigrations --check`·`--dry-run`은 생성으로, `alembic`·`flask db`의 `upgrade`·`downgrade --sql`(SQL만 출력하는 오프라인 모드)은 적용·롤백으로 보지 않는다.
 
 공통 스위치:
 

@@ -78,4 +78,14 @@ run "$(t_pre_json Monitor '{"command":"python manage.py migrate"}')"; assert_dec
 run "$(t_pre_json Monitor '{"ws":"wss://example/stream"}')"; assert_decision "Monitor ws → none" none
 run "$(t_pre_json Monitor '{"command":"python manage.py migrate"}' "" default "$AGENT_ID")"; assert_decision "Monitor subagent migrate → deny" deny
 run "$(t_pre_json Monitor '{"command":"rm app/migrations/0002_x.py"}')"; assert_decision "Monitor rm migration → ask" ask
+
+t_section "alembic·Flask-Migrate 오프라인 모드(--sql)"
+for c in 'alembic upgrade head --sql' 'uv run alembic upgrade head --sql > upgrade.sql' 'alembic downgrade -1 --sql' 'flask db upgrade --sql' 'flask db downgrade --sql'; do
+  tb "offline main: $c → none" none "$c"
+  tb "offline subagent: $c → none" none "$c" "" default "$AGENT_ID"
+done
+tb 'online after offline in one command → ask' ask 'alembic upgrade head --sql > u.sql && alembic upgrade head'
+tb 'subagent online after offline → deny' deny 'alembic upgrade head --sql > u.sql && alembic upgrade head' "" default "$AGENT_ID"
+tb 'subagent alembic downgrade (online) → deny' deny 'alembic downgrade -1' "" default "$AGENT_ID"
+tb 'flag-like text in a message is not --sql' ask 'alembic upgrade head --sqlx'
 t_report
