@@ -346,14 +346,17 @@ ECC(everything-claude-code)를 전역으로 켠 PC를 기준으로, 기능이 �
 
 - `scripts/validate.sh --repo | --installed [--home <dir>] | --project <dir>` (`--exit-zero`, `--max-lines N`, `--quiet`)
   - 출력: `OK|WARN|FAIL|INFO <검사>: <내용>`, 요약 `OK n · WARN n · FAIL n`. FAIL이 있으면 exit 1.
-  - 검사: JSON 파싱, 스키마에 없는 키(WARN), 훅 이벤트·타입, 훅 스크립트 존재·실행 권한, 권한 규칙 문법(`Write(...)`·`Bash(x:*)` 등 WARN), `bash -n`, 에이전트·스킬 frontmatter, 규칙 `paths`, 설치본과 저장소 커밋 차이.
+  - 검사: JSON 파싱, 스키마에 없는 키(WARN), 훅 이벤트·타입, 훅 스크립트 존재·실행 권한, `statusLine` 형식, 권한 규칙 문법(`Write(...)`·`Bash(x:*)`·공백 없는 와일드카드 `Bash(ls*)` 등 WARN)과 목록 간 중복, Read deny와 `secret-patterns.txt` 동기화, `bash -n`, 에이전트·스킬 frontmatter, 스킬 셸 주입 명령과 `allowed-tools` 규칙 일치(이 저장소 스킬은 FAIL), 규칙 `paths`, 깨진 심볼릭 링크, 템플릿 이름(`claude/` 아래 `CLAUDE.md`·`.claude/` 금지), 설치본과 저장소 커밋 차이.
+  - `--project`는 팀 공유 파일의 개인 설정 참조(`CLAUDE.local.md`로 옮길 것)와 공유 설정·훅이 gitignore에 걸리는지도 본다.
   - `--repo`는 `merge-settings.py --selftest`와 `tests/run-all.sh`도 실행한다(`--quiet`면 생략).
 - `tests/run-all.sh [--quick] [--filter <부분문자열>] [--verbose]`: 훅 스위트를 `/bin/bash`(3.2)와 PATH의 다른 bash(있으면)로, 설치 스위트와 `merge-settings.py --selftest`를 한 번 실행한다. 실제 `~/.claude` 대신 공백이 들어간 임시 HOME을 쓴다.
   - 훅(`tests/hooks/`): `test-lib-common.sh` · `test-lib-common-2.sh` · `test-lib-parse.sh` · `test-lib-parse-2.sh` · `test-guards-secrets.sh` · `test-guards-secrets-2.sh` · `test-guards-destructive.sh` · `test-guards-destructive-2.sh` · `test-guards-migrations.sh` · `test-guards-migrations-2.sh` · `test-aux-format.sh` · `test-aux-session.sh` · `test-aux-statusline.sh`. `-2` 파일은 검증 라운드에서 추가한 회귀·성능(200 KB heredoc 2초 이내 등) 케이스다. 픽스처는 `tests/hooks/fixtures/`, 공용 함수는 `tests/lib/testlib.sh`.
-  - 설치(`tests/install/`): `run.sh`가 `test-install.sh` · `test-install-upgrade.sh` · `test-apply.sh`를 실행한다(공용 `helpers.sh`).
+  - 설치(`tests/install/`): `run.sh`가 `test-install.sh` · `test-install-upgrade.sh` · `test-install-edge.sh` · `test-install-safety.sh` · `test-apply.sh` · `test-apply-edge.sh`를 실행한다(공용 `helpers.sh`). `-edge`·`-safety`는 경계 조건과 실패·롤백·백업 보존 케이스다.
   - 스킬: `tests/skills/test-skills.sh`(context.sh, allowed-tools와 주입 명령 일치, 프로필 fragment). `tests/run-all.sh`가 함께 실행한다.
-- 테스트 전용 env(평소에는 설정하지 않는다): `HOOK_FORCE_PARSER=jq|python3|none`(훅 파서 강제), `DEV_SETTINGS_FAIL_AT=place|settings`(설치 실패 주입), `DEV_SETTINGS_IN_TESTS=1`(run-all.sh가 설정, `validate.sh --repo`의 재귀 실행 방지), `DEV_SETTINGS_TEST_REPO=<dir>`(설치 스위트를 저장소 사본에 실행).
-- CI(`.github/workflows/ci.yml`): push·PR마다 ubuntu-latest·macos-latest에서 `tests/run-all.sh`, `validate.sh --repo --quiet`, 비밀·이메일 패턴 검사.
+- 테스트 전용 env(평소에는 설정하지 않는다): `HOOK_FORCE_PARSER=jq|python3|none`(훅 파서 강제), `DEV_SETTINGS_FAIL_AT=<지점>[,<지점>…]`(설치 실패 주입. 지점: `place` `settings` `manifest` `restore`), `DEV_SETTINGS_IN_TESTS=1`(run-all.sh가 설정, `validate.sh --repo`의 재귀 실행 방지), `DEV_SETTINGS_TEST_REPO=<dir>`(설치 스위트를 저장소 사본에 실행).
+- CI(`.github/workflows/ci.yml`): push·PR마다 세 작업에서 `tests/run-all.sh`, `validate.sh --repo --quiet`, 비밀·이메일 패턴 검사를 실행한다.
+  - ubuntu-latest 두 작업: bash 5와 GNU 도구에 awk를 gawk·mawk로 하나씩 고정한다.
+  - macos-latest: `/bin/bash` 3.2와 Homebrew bash 5(run-all.sh가 둘 다 실행), BSD awk.
 - `scripts/update-schema.sh`: schemastore에서 스키마를 받아 추가·삭제된 키와 훅 이벤트를 보여주고 스냅샷을 교체한다. 실행 후 이 README의 검증 기준 날짜를 갱신한다.
 
 ## 9. 파일 이력

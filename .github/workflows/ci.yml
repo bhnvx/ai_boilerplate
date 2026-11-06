@@ -9,19 +9,48 @@ permissions:
 
 jobs:
   test:
-    name: test (${{ matrix.os }})
+    name: test (${{ matrix.os }}, awk ${{ matrix.awk }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        include:
+          # Linux: bash 5 + GNU 도구. 훅 파서가 쓰는 awk 구현(gawk·mawk)마다 한 번씩
+          - os: ubuntu-latest
+            awk: gawk
+          - os: ubuntu-latest
+            awk: mawk
+          # macOS: /bin/bash 3.2 + Homebrew bash 5(run-all.sh 가 둘 다 실행) + BSD awk
+          - os: macos-latest
+            awk: bsd
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: '1'
+      HOMEBREW_NO_INSTALL_CLEANUP: '1'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
+
+      - name: 테스트 환경 준비
+        env:
+          AWK_IMPL: ${{ matrix.awk }}
+        run: |
+          if [ "$RUNNER_OS" = Linux ]; then
+            sudo apt-get update -qq
+            sudo apt-get install -y -qq gawk mawk >/dev/null
+            # 이후 단계의 awk 를 matrix.awk 로 고정한다(PATH 맨 앞의 심 디렉터리)
+            shim="$RUNNER_TEMP/awk-shim"
+            mkdir -p "$shim"
+            ln -sf "$(command -v "$AWK_IMPL")" "$shim/awk"
+            echo "$shim" >> "$GITHUB_PATH"
+          else
+            # PATH 에 bash 5 를 두면 run-all.sh 가 훅·스킬 스위트를 /bin/bash(3.2)와 bash 5 로 두 번 실행한다
+            brew install bash
+          fi
 
       - name: 도구 버전
         run: |
-          /bin/bash --version | head -n 1
-          bash --version | head -n 1
+          for b in /bin/bash $(type -ap bash); do printf '%s: ' "$b"; "$b" --version | head -n 1; done
+          printf 'awk(%s): ' "$(command -v awk)"
+          { awk --version 2>/dev/null | head -n 1 | grep . ; } || awk -W version 2>&1 | head -n 1
           python3 --version
           jq --version || echo 'jq 없음'
           git --version
