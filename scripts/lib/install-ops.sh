@@ -130,12 +130,23 @@ op_restore() {
     [ -n "$rel" ] || continue
     target="$CLAUDE_DIR/$rel"
     [ "$rel" = settings.json ] && target=$(resolve_link "$target")
+    [ -f "$match/$rel.dev_settings.link" ] && continue   # 심볼릭 링크였던 파일은 아래에서 링크로 되돌린다
     info "복구  $rel"
     [ "${OPT_DRY:-0}" = 1 ] && continue
     mkdir -p -- "$(dirname -- "$target")" || die "디렉터리 생성 실패"
     restore_file "$match/$rel" "$target" || die "복구 실패: $rel"
   done <<EOF
 $(list_files "$match")
+EOF
+  while IFS= read -r rel; do
+    [ -n "$rel" ] || continue
+    target="$CLAUDE_DIR/$rel"
+    info "복구  $rel (심볼릭 링크 → $(cat -- "$match/$rel.dev_settings.link"))"
+    [ "${OPT_DRY:-0}" = 1 ] && continue
+    mkdir -p -- "$(dirname -- "$target")" || die "디렉터리 생성 실패"
+    restore_link "$match/$rel.dev_settings.link" "$target" || die "복구 실패: $rel (심볼릭 링크)"
+  done <<EOF
+$(list_links "$match")
 EOF
   if [ "${OPT_DRY:-0}" = 1 ]; then log "dry-run 종료 — 아무것도 쓰지 않았다."; else log "복구 완료: $match"; fi
 }

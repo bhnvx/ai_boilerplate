@@ -72,6 +72,7 @@ tx_rollback() {
       [ -n "$rel" ] || continue
       target="$CLAUDE_DIR/$rel"
       [ "$rel" = settings.json ] && target=$(resolve_link "$target")
+      [ -f "$BK_DIR/$rel.dev_settings.link" ] && continue   # 심볼릭 링크였던 파일은 아래에서 링크로 되돌린다
       same_file "$BK_DIR/$rel" "$target" && continue   # 아직 바뀌지 않은 파일은 건드리지 않는다
       mkdir -p -- "$(dirname -- "$target")" 2>/dev/null
       if fail_at restore || ! restore_file "$BK_DIR/$rel" "$target"; then
@@ -79,6 +80,16 @@ tx_rollback() {
       else info "복구  $rel"; fi
     done <<EOF
 $(list_files "$BK_DIR")
+EOF
+    while IFS= read -r rel; do
+      [ -n "$rel" ] || continue
+      target="$CLAUDE_DIR/$rel"
+      mkdir -p -- "$(dirname -- "$target")" 2>/dev/null
+      if fail_at restore || ! restore_link "$BK_DIR/$rel.dev_settings.link" "$target"; then
+        rb_fail=1; warn "복구 실패: $rel (심볼릭 링크)"
+      else info "복구  $rel (심볼릭 링크 → $(cat -- "$BK_DIR/$rel.dev_settings.link"))"; fi
+    done <<EOF
+$(list_links "$BK_DIR")
 EOF
     if [ "$rb_fail" = 0 ]; then rm -rf -- "$BK_DIR"; BK_DIR=""; fi
   fi
@@ -103,6 +114,8 @@ tx_backup() {
     dest="$CLAUDE_DIR/${T_REL[$i]}"
     case ${T_ACTION[$i]} in
       update) backup_file "$dest" "${T_REL[$i]}" "$BK_PARENT" || tx_fail "백업 실패: ${T_REL[$i]}" ;;
+      # 깨진 심볼릭 링크 자리에 새로 놓는 경우: 링크 기록만 남긴다(롤백 때 링크 복원)
+      create) if [ -L "$dest" ]; then backup_file "$dest" "${T_REL[$i]}" "$BK_PARENT" || tx_fail "백업 실패: ${T_REL[$i]}"; fi ;;
     esac
     # 바뀌거나 지워질 .dev_settings.new 만 백업(동일하면 그대로 두므로 백업 불필요)
     if [ -f "$dest.dev_settings.new" ]; then

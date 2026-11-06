@@ -12,6 +12,8 @@ warn() { printf 'WARN %s\n' "$*" >&2; N_WARN=$((N_WARN + 1)); }
 die() {
   printf '오류: %s\n' "$1" >&2
   if [ -n "${STAGE:-}" ] && [ -d "$STAGE" ]; then rm -rf -- "$STAGE"; fi
+  # install.sh 가 이번 실행에서 만든 ~/.claude 는 비어 있으면 지운다(계획 단계에서 중단된 경우; rmdir 은 빈 디렉터리만 지움).
+  if [ "${CLAUDE_DIR_NEW:-0}" = 1 ] && [ -n "${CLAUDE_DIR:-}" ]; then rmdir -- "$CLAUDE_DIR" 2>/dev/null; fi
   exit "${2:-1}"
 }
 
@@ -127,14 +129,39 @@ restore_file() {
   atomic_replace "$1" "$2"
 }
 
-# 파일을 백업 디렉터리에 상대 경로 그대로 보존(cp -p).
+# 파일을 백업 디렉터리에 상대 경로 그대로 보존(cp -p). 심볼릭 링크(깨진 링크 포함)면 링크 텍스트를
+# <rel>.dev_settings.link 에 남겨 롤백·--restore 가 링크를 다시 만들게 한다(place_file 이 링크를 일반 파일로 바꾸므로).
 # usage: backup_file <abs-path> <rel-path> <backup-parent>
 backup_file() {
-  local src="$1" rel="$2" parent="$3"
-  [ -f "$src" ] || return 0
+  local src="$1" rel="$2" parent="$3" lt
+  [ -f "$src" ] || [ -L "$src" ] || return 0
   ensure_backup_dir "$parent" || return 1
   mkdir -p -- "$(dirname -- "$BK_DIR/$rel")" || return 1
+  if [ -L "$src" ]; then
+    lt=$(readlink -- "$src") || return 1
+    printf '%s' "$lt" > "$BK_DIR/$rel.dev_settings.link" || return 1
+  fi
+  [ -f "$src" ] || return 0
   cp -p -- "$src" "$BK_DIR/$rel"
+}
+
+# 백업에 링크 기록(<rel>.dev_settings.link)이 있는 상대 경로 목록(정렬, 개행 구분).
+# usage: list_links <backup-dir>
+list_links() {
+  [ -d "$1" ] || return 0
+  (cd -P -- "$1" && find . -type f -name '*.dev_settings.link' -print \
+    | sed -e 's|^\./||' -e 's|\.dev_settings\.link$||' | LC_ALL=C sort)
+}
+
+# 링크 기록대로 <target> 을 심볼릭 링크로 되돌린다. 이미 같은 링크면 그대로 둔다.
+# usage: restore_link <link-record> <target>
+restore_link() {
+  local lt
+  lt=$(cat -- "$1") || return 1
+  [ -n "$lt" ] || return 1
+  if [ -L "$2" ] && [ "$(readlink -- "$2")" = "$lt" ]; then return 0; fi
+  rm -f -- "$2" || return 1
+  ln -s -- "$lt" "$2"
 }
 
 # 오래된 백업 정리: <parent> 아래 YYYYmmdd-HHMMSS.XXXX 형태 디렉터리를 최근 N개만 남긴다.
@@ -159,12 +186,12 @@ prune_backups() {
   done
 }
 
-# 정렬된 파일 목록(상대 경로, 개행 구분)을 출력. .DS_Store 와 *.dev_settings.new 제외.
+# 정렬된 파일 목록(상대 경로, 개행 구분)을 출력. .DS_Store, *.dev_settings.new, 링크 기록(*.dev_settings.link) 제외.
 # usage: list_files <dir>
 list_files() {
   local dir="$1"
   [ -d "$dir" ] || return 0
-  (cd -P -- "$dir" && find . -type f ! -name .DS_Store ! -name '*.dev_settings.new' ! -name .gitkeep -print \
+  (cd -P -- "$dir" && find . -type f ! -name .DS_Store ! -name '*.dev_settings.new' ! -name '*.dev_settings.link' ! -name .gitkeep -print \
     | sed 's|^\./||' | LC_ALL=C sort)
 }
 

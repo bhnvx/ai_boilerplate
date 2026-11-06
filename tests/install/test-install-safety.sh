@@ -116,6 +116,58 @@ if need "dotfiles link: template" "$G/CLAUDE.md.tmpl"; then
   assert_eq "dotfiles link: dotfiles file still untouched" "# my dotfiles claude md" "$(cat "$HD/dotfiles/CLAUDE.md")"
   BKD=""; for d in "$CD"/backups/dev_settings/[0-9]*/; do [ -f "${d}CLAUDE.md" ] && BKD="${d%/}"; done
   assert_eq "dotfiles link: link target content backed up" "# my dotfiles claude md" "$(cat "$BKD/CLAUDE.md" 2>/dev/null)"
+  assert_eq "dotfiles link: link text recorded in the backup" ../dotfiles/CLAUDE.md "$(cat "$BKD/CLAUDE.md.dev_settings.link" 2>/dev/null)"
+  echo "## (S9) --restore 는 심볼릭 링크였던 파일을 링크로 되돌린다(dry-run 은 계획만)"
+  if [ -n "$BKD" ]; then
+    run_install "$HD" --restore "${BKD##*/}" --dry-run
+    assert_eq "restore link: dry-run exit 0" 0 "$RC"
+    assert_contains "restore link: dry-run lists the link" "$OUT" "복구  CLAUDE.md (심볼릭 링크 → ../dotfiles/CLAUDE.md)"
+    assert_eq "restore link: dry-run leaves the regular file" True "$([ -f "$CD/CLAUDE.md" ] && [ ! -L "$CD/CLAUDE.md" ] && echo True || echo False)"
+    run_install "$HD" --restore "${BKD##*/}" --yes
+    assert_eq "restore link: exit 0" 0 "$RC"
+    assert_eq "restore link: CLAUDE.md is the same symlink again" ../dotfiles/CLAUDE.md "$(readlink "$CD/CLAUDE.md" 2>/dev/null)"
+    assert_eq "restore link: dotfiles untouched" "# my dotfiles claude md" "$(cat "$HD/dotfiles/CLAUDE.md")"
+    assert_eq "restore link: no link record copied into ~/.claude" 0 "$(find "$CD" -path "$CD/backups" -prune -o -name '*.dev_settings.link' -print | grep -c '')"
+  fi
 fi
+
+echo "## (S8) 링크를 --force 로 덮은 뒤 실패 → 롤백이 심볼릭 링크를 되살린다(깨진 링크 포함)"
+if need "link rollback: template" "$G/CLAUDE.md.tmpl"; then
+  new_home; HL="$NEW_HOME"; CL="$HL/.claude"; mkdir -p "$CL" "$HL/dotfiles"
+  printf '# my dotfiles claude md\n' > "$HL/dotfiles/CLAUDE.md"; ln -s ../dotfiles/CLAUDE.md "$CL/CLAUDE.md"
+  DEV_SETTINGS_FAIL_AT=manifest run_install "$HL" --force --yes
+  assert_eq "link rollback: exit 1" 1 "$RC"
+  assert_contains "link rollback: link restore reported" "$OUT" "복구  CLAUDE.md (심볼릭 링크 → ../dotfiles/CLAUDE.md)"
+  assert_contains "link rollback: complete" "$OUT" "롤백 완료"
+  assert_eq "link rollback: same symlink again" ../dotfiles/CLAUDE.md "$(readlink "$CL/CLAUDE.md" 2>/dev/null)"
+  assert_eq "link rollback: dotfiles untouched" "# my dotfiles claude md" "$(cat "$HL/dotfiles/CLAUDE.md")"
+  assert_eq "link rollback: no link record left" 0 "$(find "$HL" -name '*.dev_settings.link' | grep -c '')"
+  assert_eq "link rollback: backup dir removed after a full restore" "" "$(ls -d "$CL"/backups/dev_settings/[0-9]* 2>/dev/null)"
+  # 실패가 배치 전(설정 단계)에 나도 링크는 그대로다
+  DEV_SETTINGS_FAIL_AT=settings run_install "$HL" --force --yes
+  assert_eq "link rollback(settings): exit 1" 1 "$RC"
+  assert_eq "link rollback(settings): symlink kept" ../dotfiles/CLAUDE.md "$(readlink "$CL/CLAUDE.md" 2>/dev/null)"
+  # 깨진 링크 자리는 '생성'으로 계획된다 → 실패하면 깨진 링크를 그대로 되돌린다
+  new_home; HK="$NEW_HOME"; CK="$HK/.claude"; mkdir -p "$CK"; ln -s ../nowhere/CLAUDE.md "$CK/CLAUDE.md"
+  DEV_SETTINGS_FAIL_AT=manifest run_install "$HK"
+  assert_eq "broken link rollback: exit 1" 1 "$RC"
+  assert_contains "broken link rollback: link restore reported" "$OUT" "복구  CLAUDE.md (심볼릭 링크 → ../nowhere/CLAUDE.md)"
+  assert_eq "broken link rollback: broken symlink restored" ../nowhere/CLAUDE.md "$(readlink "$CK/CLAUDE.md" 2>/dev/null)"
+fi
+
+echo "## (S3b) 계획 단계에서 중단(병합 실패) → 이번 실행이 만든 빈 ~/.claude 를 남기지 않는다"
+BR="$TROOT/broken repo"; mkdir -p "$BR"
+(cd "$REPO" && tar cf - --exclude ./.git --exclude ./tests .) | (cd "$BR" && tar xf -)
+printf '{ "permissions": \n' > "$BR/$G/settings.json"
+new_home; HX="$NEW_HOME"
+/bin/bash "$BR/install.sh" --home "$HX" --yes > "$OUT" 2>&1 < /dev/null; RC=$?
+assert_eq "plan abort: exit 1" 1 "$RC"
+assert_contains "plan abort: merge failure reported" "$OUT" "settings.json 병합 실패"
+assert_no_file "plan abort: no ~/.claude left" "$HX/.claude"
+new_home; HX2="$NEW_HOME"; mkdir -p "$HX2/.claude"
+/bin/bash "$BR/install.sh" --home "$HX2" --yes > "$OUT" 2>&1 < /dev/null; RC=$?
+assert_eq "plan abort(existing dir): exit 1" 1 "$RC"
+assert_eq "plan abort(existing dir): ~/.claude kept" True "$([ -d "$HX2/.claude" ] && echo True || echo False)"
+assert_eq "plan abort(existing dir): no stage dir left" 0 "$(find "$HX2/.claude" -name '.dev_settings.stage.*' | grep -c '')"
 
 t_report "test-install-safety"

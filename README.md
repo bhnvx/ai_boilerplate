@@ -322,7 +322,7 @@ ECC(everything-claude-code)를 전역으로 켠 PC를 기준으로, 기능이 �
 - **복사 방식만 지원**(심볼릭 링크 없음). 저장소에서 편집 중인 훅이 열린 모든 세션에 즉시 반영되는 사고를 막고, 설치본 수정 여부를 cksum으로 추적하기 위해서다.
 - **파일별 계획**: `create`(새 파일) · `update`(지난 설치 후 손대지 않은 파일 갱신) · `skip-identical` · `keep-user-edited`(사용자가 고친 파일 유지 + 옆에 `<파일>.dev_settings.new` 생성 + WARN) · `conflict`(매니페스트에 없는 기존 파일, `--force` 없으면 유지 + `.new`) · `remove-stale`(저장소에서 사라진 파일, 손대지 않았으면 백업 후 삭제).
 - **사용자가 지운 관리 파일**: 매니페스트에 있는데 사용자가 지운 파일(예: `rules/web.md`)은 `유지(사용자 삭제) <경로>`로 표시하고 다시 만들지 않는다. `--force`면 다시 만든다(settings 관리 규칙과 같은 정책).
-- **트랜잭션**: 임시 stage 디렉터리에 전부 준비 → `bash -n`·JSON 검사 → 바뀔 파일만 백업 → 배치 → `settings.json`은 마지막에 같은 디렉터리 임시 파일에서 `mv`로 교체(심볼릭 링크면 실제 대상에 기록, 설치 중 변경되면 중단) → 매니페스트 기록. 중간 실패·중단 시 이번 백업으로 되돌린다. 되돌리기에 실패한 파일이 있으면 백업을 지우지 않고 `--restore` 명령을 안내한다. stage 디렉터리는 어떤 경우에도 지운다.
+- **트랜잭션**: 임시 stage 디렉터리에 전부 준비 → `bash -n`·JSON 검사 → 바뀔 파일만 백업 → 배치 → `settings.json`은 마지막에 같은 디렉터리 임시 파일에서 `mv`로 교체(심볼릭 링크면 실제 대상에 기록, 설치 중 변경되면 중단) → 매니페스트 기록. 중간 실패·중단 시 이번 백업으로 되돌린다(심볼릭 링크였던 파일은 백업에 남긴 링크 텍스트로 같은 링크를 다시 만든다 — `--restore`도 같다). 되돌리기에 실패한 파일이 있으면 백업을 지우지 않고 `--restore` 명령을 안내한다. stage 디렉터리는 어떤 경우에도 지운다.
 - **settings 병합**(`scripts/merge-settings.py`): 사용자 키 보존(4.1 목록), permission 목록은 합집합, 훅은 매처 정규화(`Edit|Write` = `Write|Edit`)와 명령 기준 중복 제거, 사용자가 지운 관리 규칙은 `--force` 없이는 다시 넣지 않는다. 엄격한 JSON만 읽는다(JSONC 주석 불가). 엄격한 JSON이 아니면 파일을 배치하기 전에 위치(line·col)를 알리고 exit 1로 멈춘다.
 - **백업**: `~/.claude/backups/dev_settings/<YYYYmmdd-HHMMSS>.XXXXXX/`(최근 10개 유지). apply 백업은 `~/.claude/backups/dev_settings/apply/<프로젝트명>/`.
 - **매니페스트**: `~/.claude/dev_settings.manifest.json`(설치 파일별 cksum, 저장소 커밋, settings 기여분), `~/.claude/dev_settings.repo`(저장소 경로).
