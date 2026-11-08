@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — apply.sh 테스트: 프로필(auto/명시), CLAUDE.md 생성·AGENTS.md·.claude/CLAUDE.md, settings 병합,
+# dev_settings — apply.sh 테스트: 프로필(생략/auto/명시), CLAUDE.md 생성·AGENTS.md·.claude/CLAUDE.md, settings 병합,
 # gitignore 1회 추가, 포맷 훅 opt-in, --team, --dry-run, 거부 목록. 모든 경로에 공백 포함.
 . "$(cd -P -- "$(dirname -- "$0")" && pwd -P)/helpers.sh"
 
@@ -10,6 +10,40 @@ new_proj() {  # <name> → NEW_PROJ (공백 포함 경로, git init)
   (cd "$NEW_PROJ" && git init -q 2>/dev/null) || true
 }
 
+echo "## (12-0) --profile 생략: 프로필은 선택형 — 적용하지 않고 --profile auto 가 고를 프로필만 안내 (D01)"
+new_proj noprof; PN="$NEW_PROJ"
+touch "$PN/pyproject.toml" "$PN/uv.lock" "$PN/manage.py"
+run_apply "$HM" "$PN"
+assert_eq "no-profile: exit 0" 0 "$RC" || sed -n '1,30p' "$OUT"
+assert_no_file "no-profile: no python rule" "$PN/.claude/rules/python.md"
+assert_no_file "no-profile: no django rule" "$PN/.claude/rules/django.md"
+assert_contains "no-profile: says no profile was applied" "$OUT" "프로필: (없음) — --profile 을 지정하지 않아 언어 프로필을 적용하지 않는다"
+if need "no-profile: hint" claude/global/hooks/lib/detect-stack.sh; then
+  assert_contains "no-profile: hint names what --profile auto would apply" "$OUT" "힌트: --profile auto 를 붙이면 python django 프로필을 적용한다"
+  assert_not_contains "no-profile: hint does not mark missing rule files as present" "$OUT" "규칙 파일이 이미 있는 프로필"
+fi
+need "no-profile: project.md" "$PT/dot-claude/rules/project.md" && assert_file "no-profile: common rules still applied" "$PN/.claude/rules/project.md"
+if need "no-profile: fragment" profiles/python/settings.fragment.json "$PT/dot-claude/settings.json"; then
+  FRAG_RULE=$(jq_py "$REPO/profiles/python/settings.fragment.json" '(d.get("permissions",{}).get("allow") or [""])[0]')
+  [ -n "$FRAG_RULE" ] && assert_eq "no-profile: python fragment not merged" False "$(jq_py "$PN/.claude/settings.json" "\"$FRAG_RULE\" in d['permissions'].get('allow', [])")"
+fi
+# 예전 버전(암묵적 auto)이 프로필을 적용한 프로젝트: --profile 없이 다시 적용해도 그대로 두고, 힌트는 이미 있는 규칙 파일을 밝힌다
+if need "no-profile(applied): rules" claude/global/hooks/lib/detect-stack.sh profiles/python/rules/python.md profiles/django/rules/django.md; then
+  new_proj applied; PA="$NEW_PROJ"; touch "$PA/pyproject.toml" "$PA/uv.lock" "$PA/manage.py"
+  mkdir -p "$PA/.claude/rules"; printf 'mine py\n' > "$PA/.claude/rules/python.md"; printf 'mine dj\n' > "$PA/.claude/rules/django.md"
+  run_apply "$HM" "$PA"
+  assert_eq "no-profile(applied): exit 0" 0 "$RC"
+  assert_eq "no-profile(applied): rule files untouched" "mine py|mine dj" "$(cat "$PA/.claude/rules/python.md")|$(cat "$PA/.claude/rules/django.md")"
+  assert_contains "no-profile(applied): hint says which profiles already have rule files" "$OUT" \
+    "힌트: --profile auto 를 붙이면 python django 프로필을 적용한다(규칙 파일이 이미 있는 프로필: python django)"
+  rm -f "$PA/.claude/rules/django.md"; run_apply "$HM" "$PA" --dry-run
+  assert_contains "no-profile(applied): only profiles whose rule files all exist are marked" "$OUT" "(규칙 파일이 이미 있는 프로필: python)"
+fi
+new_proj nostack; run_apply "$HM" "$NEW_PROJ" --dry-run
+assert_eq "no-profile(no stack): exit 0" 0 "$RC"
+assert_contains "no-profile(no stack): says no profile was applied" "$OUT" "프로필: (없음) — --profile 을 지정하지 않아"
+assert_not_contains "no-profile(no stack): no hint" "$OUT" "힌트:"
+
 echo "## (12) uv+django 프로젝트에 --profile auto / 명시 프로필"
 new_proj proj; P="$NEW_PROJ"
 touch "$P/pyproject.toml" "$P/uv.lock" "$P/manage.py"
@@ -18,7 +52,9 @@ run_apply "$HM" "$P" --profile auto
 assert_eq "apply(auto): exit 0" 0 "$RC" || sed -n '1,30p' "$OUT"
 if need "apply(auto): stack detected" claude/global/hooks/lib/detect-stack.sh; then
   assert_contains "apply(auto): prints detected stack" "$OUT" "감지된 스택"
+  assert_file "apply(auto): python profile rule" "$P/.claude/rules/python.md"
   assert_file "apply(auto): django profile rule" "$P/.claude/rules/django.md"
+  assert_not_contains "apply(auto): no hint when --profile is given" "$OUT" "힌트:"
 fi
 if need "apply: CLAUDE.md" "$PT/CLAUDE.md.tmpl"; then
   assert_file "apply: CLAUDE.md created" "$P/CLAUDE.md"
@@ -90,6 +126,12 @@ if need "agents-md: template" "$PT/CLAUDE.md.tmpl"; then
   assert_no_file "dot-claude-md: no new CLAUDE.md" "$PD/CLAUDE.md"
   assert_eq "dot-claude-md: existing file untouched" "# existing" "$(cat "$PD/.claude/CLAUDE.md")"
   assert_file "dot-claude-md: template offered as .dev_settings.new" "$PD/.claude/CLAUDE.md.dev_settings.new"
+  run_apply "$HM" "$PD" --profile python --force --yes
+  assert_eq "dot-claude-md --force: exit 0" 0 "$RC"
+  assert_no_file "dot-claude-md --force: still no root CLAUDE.md" "$PD/CLAUDE.md"
+  assert_eq "dot-claude-md --force: existing file untouched" "# existing" "$(cat "$PD/.claude/CLAUDE.md")"
+  assert_contains "dot-claude-md --force: WARN explains it" "$OUT" ".claude/CLAUDE.md 가 있어 --force 로도 CLAUDE.md 를 새로 만들지 않는다"
+  assert_file "dot-claude-md --force: candidate stays next to .claude/CLAUDE.md" "$PD/.claude/CLAUDE.md.dev_settings.new"
   new_proj existing; PE="$NEW_PROJ"; printf '# mine\n' > "$PE/CLAUDE.md"
   run_apply "$HM" "$PE" --profile python
   assert_eq "existing-md: kept" "# mine" "$(cat "$PE/CLAUDE.md")"

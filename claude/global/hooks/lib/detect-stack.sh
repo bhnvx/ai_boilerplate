@@ -4,7 +4,8 @@
 # source: . lib/detect-stack.sh; detect_stack <dir>  → 전역 DETECT_STACK 에 같은 토큰 문자열(fork 최소화용)
 # 토큰 순서: python [uv|poetry|pipenv|pip] django fastapi node [pnpm|yarn|bun|npm] typescript react next
 #            go rust ruby php java dotnet docker
-# 하위 디렉터리는 보지 않는다(주어진 디렉터리만). 사용처: session-context, apply.sh --profile auto, harness-init.
+# 하위 디렉터리는 보지 않는다(주어진 디렉터리만). 사용처: session-context, apply.sh(--profile auto, 생략 시 안내),
+#   harness-init·preflight 스킬 context.sh.
 # 의존성은 "의존성 모양"일 때만 인정한다(# 주석 줄·설명 문구·npm 스크립트 이름은 무시):
 #   python: 줄 맨 앞 이름(requirements·setup.cfg·TOML 키 django = …) 또는 따옴표로 시작하는 PEP 508 문자열("Django>=5")
 #   package.json: "react"|"next"|"typescript" 키의 값이 버전·범위·태그·프로토콜(^ ~ 숫자 * workspace: npm: latest …)

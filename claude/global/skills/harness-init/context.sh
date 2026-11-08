@@ -96,7 +96,7 @@ if [ -f "$cfg/settings.json" ] && grep -Eq "$ecc_re" "$cfg/settings.json" 2>/dev
   case $ecc_dis in *post:quality-gate*) ecc_fix=off ;; esac
   [ "$ecc_prof" = minimal ] && ecc_fix=off
   if [ "$ecc_fix" = true ]; then
-    printf -- '- ECC 플러그인: 활성, ECC_QUALITY_GATE_FIX=true — 포맷 훅은 ECC가 고치는 타입(.py .go .ts .tsx .js .jsx .json .md)을 건너뛰고 나머지(bash -n·shfmt·rustfmt·terraform fmt·taplo)만 실행\n'
+    printf -- '- ECC 플러그인: 활성, ECC_QUALITY_GATE_FIX=true — 포맷 훅은 ECC가 고치는 타입(.py .go .ts .tsx .js .jsx .json .md)만 건너뛰고 그 밖의 타입(.pyi .mjs .cjs .yml .css .sh .rs .tf .toml 등)은 그대로 포맷\n'
   else
     printf -- '- ECC 플러그인: 활성 (quality-gate는 기본적으로 검사만 하므로 포맷 훅과 겹치지 않음)\n'
   fi
@@ -105,6 +105,7 @@ else
 fi
 
 if [ -n "$repo" ] && [ -f "$repo/apply.sh" ]; then
-  printf '\n미리보기 명령: bash %s %s --profile auto --dry-run\n' "$(sq "$repo/apply.sh")" "$(sq "$dir")"
+  # 프로필은 선택형: 추정 프로필이 있을 때만 --profile auto 를 붙인다(apply.sh 는 --profile 을 생략하면 적용하지 않는다).
+  printf '\n미리보기 명령: bash %s %s%s --dry-run\n' "$(sq "$repo/apply.sh")" "$(sq "$dir")" "${prof:+ --profile auto}"
 fi
 exit 0

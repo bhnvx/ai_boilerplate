@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # dev_settings — 프로젝트에 Claude Code 하네스 템플릿 적용(CLAUDE.md, .claude/settings.json, rules, gitignore).
-# 사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes]
+# 사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
+#   언어 프로필은 선택형 add-on: --profile 을 생략하면 적용하지 않는다(auto 는 detect-stack.sh 감지 결과로 고른다).
 # 종료 코드: 0 성공 · 1 거부/실패(롤백 없음 — 바뀐 파일만 백업) · 2 사용법 오류 · 3 적용됐지만 validate FAIL. bash 3.2 호환.
 
 REPO_DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P) || exit 1
@@ -9,9 +10,11 @@ REPO_DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P) || exit 1
 
 usage() {
   cat <<'EOF'
-사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes]
+사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
 
-  --profile <p>       언어 프로필(반복 가능, 쉼표 구분 가능). 기본 auto = hooks/lib/detect-stack.sh 로 감지.
+  --profile <p>       언어 프로필(선택형 add-on, 반복 가능, 쉼표 구분 가능, --profile=<p> 도 가능).
+                      생략하면 언어 프로필 없이 공통 템플릿만 적용한다(감지된 스택이 있으면 --profile auto 가
+                      고를 프로필을 안내만 한다). auto = hooks/lib/detect-stack.sh 로 감지해 고른다.
                       django/fastapi 는 python 을 함께 적용한다.
   --with-format-hook  PostToolUse 포맷 훅과 .claude/hooks/ 복사. 프로젝트에 포매터 설정이 있으면 권장.
                       ECC quality-gate 는 기본적으로 검사만 하므로 겹치지 않는다; ECC_QUALITY_GATE_FIX=true 일 때만
@@ -21,6 +24,7 @@ usage() {
   --dry-run           계획만 출력(아무것도 쓰지 않음)
   --yes, -y           --force 덮어쓰기 확인 생략(비대화형 실행에서 --force 를 쓰려면 필수)
   --team              전역 git.md 를 .claude/rules/git.md 로 함께 복사(팀 컨벤션 동봉)
+  -h, --help          이 도움말
 
 종료 코드: 0 성공 · 1 거부/실패(롤백 없음 — 바뀐 파일만 ~/.claude/backups/dev_settings/apply/ 에 백업) · 2 사용법 오류
           · 3 적용됐지만 validate FAIL
@@ -44,7 +48,6 @@ while [ $# -gt 0 ]; do
   shift
 done
 [ -n "$TARGET_ARG" ] || { usage; exit 2; }
-[ -n "$PROFILES_ARG" ] || PROFILES_ARG="auto"
 
 require_python
 [ -d "$TARGET_ARG" ] || die "디렉터리가 아니다: $TARGET_ARG"
@@ -72,9 +75,9 @@ add_profile() {
   for p in ${PROFILES[@]+"${PROFILES[@]}"}; do [ "$p" = "$1" ] && return 0; done
   if [ -d "$REPO_DIR/profiles/$1" ]; then PROFILES[${#PROFILES[@]}]="$1"; else warn "프로필 없음(건너뜀): profiles/$1"; fi
 }
-detect_profiles() {
+detect_profiles() {  # [hint] — hint 면 detect-stack.sh 가 없어도 경고하지 않는다(--profile 생략 시 안내용)
   local ds="$REPO_DIR/claude/global/hooks/lib/detect-stack.sh" tokens t
-  if [ ! -f "$ds" ]; then warn "hooks/lib/detect-stack.sh 없음 — 자동 감지 불가, --profile 로 지정"; return 0; fi
+  if [ ! -f "$ds" ]; then [ "${1:-}" = hint ] || warn "hooks/lib/detect-stack.sh 없음 — 자동 감지 불가, --profile 로 지정"; return 0; fi
   tokens=$("$INSTALL_BASH" "$ds" "$TARGET" 2>/dev/null) || tokens=""
   DETECTED="$tokens"
   for t in $tokens; do
@@ -98,6 +101,22 @@ for p in "$@"; do
     *) printf '알 수 없는 프로필: %s\n\n' "$p" >&2; usage; exit 2 ;;
   esac
 done
+# --profile 생략: 프로필은 선택형 add-on 이라 적용하지 않는다. --profile auto 가 고를 프로필은 안내만 한다.
+# 규칙 파일이 이미 다 있는 프로필(예: 예전 버전이 암묵적 auto 로 적용)은 따로 밝힌다 — 빠진 것처럼 읽히지 않게.
+AUTO_HINT=""; AUTO_HAVE=""
+if [ -z "$PROFILES_ARG" ]; then
+  detect_profiles hint
+  AUTO_HINT="${PROFILES[*]+"${PROFILES[*]}"}"
+  for p in ${PROFILES[@]+"${PROFILES[@]}"}; do
+    n_rules=0; n_have=0
+    for f in "$REPO_DIR/profiles/$p/rules"/*.md; do
+      [ -f "$f" ] || continue
+      n_rules=$((n_rules + 1)); [ -f "$TARGET/.claude/rules/${f##*/}" ] && n_have=$((n_have + 1))
+    done
+    [ "$n_rules" -gt 0 ] && [ "$n_have" = "$n_rules" ] && AUTO_HAVE="$AUTO_HAVE${AUTO_HAVE:+ }$p"
+  done
+  PROFILES=()
+fi
 
 # 실행 ------------------------------------------------------------------------
 WORK=$(mktemp -d "${TMPDIR:-/tmp}/dev_settings.apply.XXXXXX") || die "임시 디렉터리 생성 실패"
@@ -105,7 +124,9 @@ trap 'rm -rf -- "$WORK"' EXIT
 log "dev_settings 적용 — 프로젝트: $TARGET$( [ "$OPT_DRY" = 1 ] && printf ' (dry-run: 쓰지 않음)')"
 [ -n "$DETECTED" ] && log "감지된 스택: $DETECTED"
 PLIST="${PROFILES[*]+"${PROFILES[*]}"}"; [ -n "$PLIST" ] || PLIST="(없음)"
+[ -z "$PROFILES_ARG" ] && PLIST="(없음) — --profile 을 지정하지 않아 언어 프로필을 적용하지 않는다"
 log "프로필: $PLIST"
+[ -n "$AUTO_HINT" ] && log "힌트: --profile auto 를 붙이면 $AUTO_HINT 프로필을 적용한다${AUTO_HAVE:+(규칙 파일이 이미 있는 프로필: $AUTO_HAVE)}"
 log "── 계획 ──"
 apply_claude_md "$WORK"
 apply_sync "$REPO_DIR/claude/project-template/CLAUDE.local.md.example" "CLAUDE.local.md.example" 644

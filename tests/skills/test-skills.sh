@@ -4,6 +4,8 @@
 # 실행: /bin/bash tests/skills/test-skills.sh   (bash 3.2 호환, 실제 ~/.claude는 건드리지 않음)
 . "$(cd -P -- "$(dirname -- "$0")/../lib" && pwd -P)/testlib.sh"
 t_setup
+# 아래는 $T_HOME/.claude 에 쓰고 지운다. context.sh 가 같은 곳을 읽도록 HOME 이 픽스처 홈인지 먼저 확인한다(실제 ~/.claude 보호).
+[ -n "$T_HOME" ] && [ "$HOME" = "$T_HOME" ] || { echo "HOME 이 테스트 홈($T_HOME)이 아니다 — 중단" >&2; exit 1; }
 unset CLAUDE_GUARD_PROTECTED_BRANCHES ECC_QUALITY_GATE_FIX ECC_HOOK_PROFILE ECC_DISABLED_HOOKS
 SK="$T_REPO_ROOT/claude/global/skills"
 NOGIT="$T_TMP/no git dir"; mkdir -p "$NOGIT"
@@ -61,32 +63,57 @@ assert_contains "init: 저장소 미설치" "$T_OUT" "(미설치: install.sh 실
 assert_contains "init: symbolic-ref 브랜치" "$T_OUT" "- git: 저장소 (브랜치 main,"
 REPO_X="$T_TMP/re'po \"x\" \$Z \`id\`"; PROJ_X="$T_TMP/pr'o\"j \$Y & 한"
 mkdir -p "$REPO_X" "$PROJ_X" && : >"$REPO_X/apply.sh"
-printf '%s\n' "$REPO_X" >"$HOME/.claude/dev_settings.repo"
+printf '%s\n' "$REPO_X" >"$T_HOME/.claude/dev_settings.repo"
 run_ctx "$SK/harness-init/context.sh" "$PROJ_X"
 assert_rc "init: 특수문자 경로 rc" 0
 line=$(printf '%s\n' "$T_OUT" | sed -n 's/^미리보기 명령: //p')
-assert_contains "init: 미리보기 명령 출력" "$line" "--profile auto --dry-run"
+assert_contains "init: 미리보기 명령 출력" "$line" "--dry-run"
 set -f; eval "set -- $line" 2>/dev/null; set +f
 assert_eq "init: 미리보기 argv[0]" "bash" "${1:-}"
 assert_eq "init: 미리보기 apply.sh 경로 왕복" "$REPO_X/apply.sh" "${2:-}"
 assert_eq "init: 미리보기 프로젝트 경로 왕복" "$PROJ_X" "${3:-}"
-assert_eq "init: 미리보기 나머지 인수" "--profile auto --dry-run" "${4:-} ${5:-} ${6:-}"
+assert_eq "init: 감지 없음 → 미리보기에 --profile 없음(D01)" "--dry-run" "${4:-}${5:+ $5}"
+# 스택이 감지되면 미리보기는 --profile auto 를 명시한다(apply.sh 는 --profile 을 생략하면 프로필을 적용하지 않는다)
+mkdir -p "$T_HOME/.claude/hooks/lib" && cp "$T_HOOKS/lib/detect-stack.sh" "$T_HOME/.claude/hooks/lib/"
+: >"$PROJ_X/pyproject.toml"
+run_ctx "$SK/harness-init/context.sh" "$PROJ_X"
+assert_contains "init: auto 프로필 추정" "$T_OUT" "auto 프로필(추정): python"
+line=$(printf '%s\n' "$T_OUT" | sed -n 's/^미리보기 명령: //p')
+set -f; eval "set -- $line" 2>/dev/null; set +f
+assert_eq "init: 감지됨 → 미리보기 --profile auto --dry-run(D01)" "--profile auto --dry-run" "${4:-} ${5:-} ${6:-}"
+rm -f "$PROJ_X/pyproject.toml"; rm -rf "$T_HOME/.claude/hooks"
 run_ctx "$SK/harness-init/context.sh" "$T_WT"
 assert_contains "init: 워크트리 브랜치" "$T_OUT" "(브랜치 feature/x,"
 run_ctx "$SK/harness-init/context.sh" "$NOGIT"
 assert_contains "init: 비-git" "$T_OUT" "- git: 저장소 아님"
 assert_contains "init: ECC 없음" "$T_OUT" "ECC 플러그인: 비활성 또는 확인 불가"
-printf '{"enabledPlugins": {"ecc@ecc": true}}\n' >"$HOME/.claude/settings.json"
+printf '{"enabledPlugins": {"ecc@ecc": true}}\n' >"$T_HOME/.claude/settings.json"
 run_ctx "$SK/harness-init/context.sh" "$T_PROJ"
 assert_contains "init: ECC 기본 → 검사만" "$T_OUT" "quality-gate는 기본적으로 검사만 하므로"
 assert_not_contains "init: 옛 주장 제거" "$T_OUT" "불필요"
 ECC_QUALITY_GATE_FIX=TRUE run_ctx "$SK/harness-init/context.sh" "$T_PROJ"
 assert_contains "init: ECC FIX=TRUE → 해당 타입 건너뜀" "$T_OUT" "ECC_QUALITY_GATE_FIX=true — 포맷 훅은 ECC가 고치는 타입"
+# 건너뛰는 타입 목록은 format-on-edit.sh 의 실제 목록과 같아야 하고, 그 밖의 타입은 그대로 포맷한다고 말해야 한다(D10)
+ecc_types=$(sed -n 's/.*case \$base in \([^)]*\)) fmt_ecc_active.*/\1/p' "$T_HOOKS/format-on-edit.sh" | sed 's/\*//g; s/|/ /g')
+assert_eq "init: format-on-edit.sh 에서 ECC 타입 목록 추출" ".py .go .ts .tsx .js .jsx .json .md" "$ecc_types"
+assert_contains "init: ECC 타입 목록 = format-on-edit.sh" "$T_OUT" "ECC가 고치는 타입($ecc_types)만 건너뛰고"
+assert_contains "init: 그 밖의 타입은 그대로 포맷" "$T_OUT" "그 밖의 타입"
+assert_not_contains "init: '나머지는 bash -n 등만' 옛 주장 제거" "$T_OUT" "나머지(bash -n"
 ECC_QUALITY_GATE_FIX=true ECC_HOOK_PROFILE=Minimal run_ctx "$SK/harness-init/context.sh" "$T_PROJ"
 assert_contains "init: minimal 프로필 → 검사만" "$T_OUT" "검사만 하므로"
 ECC_QUALITY_GATE_FIX=true ECC_DISABLED_HOOKS='pre:x,POST:Quality-Gate' run_ctx "$SK/harness-init/context.sh" "$T_PROJ"
 assert_contains "init: quality-gate 꺼짐 → 검사만" "$T_OUT" "검사만 하므로"
-rm -f "$HOME/.claude/settings.json" "$HOME/.claude/dev_settings.repo"
+rm -f "$T_HOME/.claude/settings.json" "$T_HOME/.claude/dev_settings.repo"
+
+t_section "harness-init/SKILL.md: apply.sh 동작과 일치(D01·D16·D17)"
+HI=$(cat "$SK/harness-init/SKILL.md")
+assert_not_contains "SKILL.md: '프로필 없이(--profile auto)' 표현 없음" "$HI" '프로필 없이(`--profile auto`)'
+assert_contains "SKILL.md: .claude/CLAUDE.md 만 있으면 후보는 그 옆" "$HI" '`.claude/CLAUDE.md.dev_settings.new`'
+# 커밋할 파일 목록은 apply.sh 가 출력하는 목록(apply.sh 의 `for f in ...; do [ -f "$TARGET/$f" ] && info` 줄)을 모두 담는다
+commit_files=$(sed -n 's/^for f in \(.*\); do \[ -f "\$TARGET\/\$f" ] && info .*/\1/p' "$T_REPO_ROOT/apply.sh")
+assert_contains "apply.sh 커밋할 파일 목록 추출" "$commit_files" ".gitignore"
+commit_line=$(printf '%s\n' "$HI" | grep -F -- '- 커밋할 파일:')
+for f in $commit_files; do assert_contains "SKILL.md 커밋할 파일: $f" "$commit_line" "\`$f\`"; done
 
 t_section "preflight/context.sh: .env*.example 분류·키 동기화(D14), 베이스 선택(C12)"
 PF="$T_TMP/pf proj"; mkdir -p "$PF/src"

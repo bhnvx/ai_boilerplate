@@ -133,6 +133,16 @@ assert_contains "help: ECC quality-gate only checks by default" "$OUT" "ECC qual
 assert_contains "help: ECC_QUALITY_GATE_FIX mentioned" "$OUT" "ECC_QUALITY_GATE_FIX=true"
 assert_not_contains "help: old 'ECC 없는 PC' claim gone" "$OUT" "ECC 플러그인이 없는 PC"
 assert_contains "help: exit code 1 says no rollback" "$OUT" "롤백 없음"
+assert_contains "help: omitting --profile applies no profile (D01)" "$OUT" "생략하면 언어 프로필 없이"
+assert_not_contains "help: no 'default auto' claim (D01)" "$OUT" "기본 auto"
+assert_contains "help: lists -h, --help" "$OUT" "-h, --help"
+assert_contains "help: synopsis ends with [--help]" "$OUT" "[--yes] [--help]"
+assert_contains "help: --profile=<p> form documented" "$OUT" "--profile=<p>"
+/bin/bash "$REPO/apply.sh" -h > "$TROOT/help-short.txt" 2>&1 < /dev/null
+assert_same "help: -h prints the same help" "$OUT" "$TROOT/help-short.txt"
+new_proj eqform; touch "$NEW_PROJ/pyproject.toml"; run_apply "$HM" "$NEW_PROJ" --profile=python --dry-run
+assert_eq "help: --profile=python accepted" 0 "$RC"
+assert_contains "help: --profile=python selects python" "$OUT" "프로필: python"
 new_proj summary; run_apply "$HM" "$NEW_PROJ" --profile python
 assert_contains "summary: team example files listed as optional" "$OUT" "선택: 팀원용 예시(커밋 가능)"
 assert_contains "summary: example files named" "$OUT" "CLAUDE.local.md.example · .claude/settings.local.json.example"
