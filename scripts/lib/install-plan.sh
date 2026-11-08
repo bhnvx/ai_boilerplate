@@ -199,6 +199,10 @@ print_plan() {
   if [ -n "$SETTINGS_DIFF" ] && [ -s "$SETTINGS_DIFF" ]; then
     # 병합 도구의 경고(유지/충돌)는 항상 보여 주고, diff 는 바뀔 때만 보여 준다.
     grep -E '^(유지\(|WARN)' "$SETTINGS_DIFF" | sed 's/^/  settings: /'
+    # 사용자가 지운 관리 항목은 매니페스트에 기억해 계속 넣지 않는다 — 되살리는 방법을 알린다(파일의 '(--force 로 복원)'과 같은 정책)
+    if grep -qE '^유지\(사용자 삭제\)' "$SETTINGS_DIFF"; then
+      info "settings: 위 '유지(사용자 삭제)' 항목은 다시 넣지 않는다(--force 로 복원)"
+    fi
     if [ "$SETTINGS_ACTION" != "skip-identical" ] && grep -qvE '^(유지\(|WARN)' "$SETTINGS_DIFF"; then
       log "── settings.json diff ──"; grep -vE '^(유지\(|WARN)' "$SETTINGS_DIFF"
     fi

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # dev_settings — Claude Code 전역 하네스 설치(~/.claude, 복사 모드).
-# 사용법: ./install.sh [--dry-run] [--force] [--no-settings] [--home <dir>] [--uninstall] [--restore <ts>] [--yes]
+# 사용법: ./install.sh [--dry-run] [--force] [--no-settings] [--home <dir>] [--uninstall] [--restore <ts>] [--yes] [--help]
 # 종료 코드: 0 성공 · 1 실패(롤백됨) · 2 사용법 오류 · 3 설치됐지만 validate FAIL. bash 3.2 호환.
 # 비대화형 실행(stdin 이 TTY 아님)에서 파괴적 작업(--uninstall/--restore/구버전 삭제/--force 덮어쓰기)은 --yes 가 필수.
 

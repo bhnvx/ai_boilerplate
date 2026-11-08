@@ -100,6 +100,14 @@ assert_contains "help: exit code 2 documented" "$OUT" "2 사용법 오류"
 assert_contains "help: exit code 1 says rolled back" "$OUT" "1 실패(롤백됨)"
 assert_contains "help: --yes required when non-interactive" "$OUT" "비대화형"
 assert_contains "help: dry-run covers uninstall/restore" "$OUT" "--uninstall/--restore 와 함께"
+assert_contains "help: lists -y (D18)" "$OUT" "--yes, -y"
+assert_contains "help: lists --home=<dir> (D18)" "$OUT" "--home=<dir>"
+assert_contains "help: lists -h, --help (D18)" "$OUT" "-h, --help"
+assert_contains "help: --force names the replaced settings keys (D03)" "$OUT" "language·statusLine·worktree.baseRef"
+new_home; HY="$NEW_HOME"
+/bin/bash "$REPO/install.sh" --home="$HY" -y --dry-run > "$OUT" 2>&1 < /dev/null; RC=$?
+assert_eq "parser: --home=<dir> -y --dry-run exit 0 (D18)" 0 "$RC"
+assert_contains "parser: --home=<dir> targets that home" "$OUT" "대상: $(cd -P -- "$HY" && pwd -P)/.claude"
 
 echo "## (S7) ~/.claude/CLAUDE.md 가 dotfiles 를 가리키는 링크 → --force 는 링크를 일반 파일로 바꾸고 대상은 그대로"
 if need "dotfiles link: template" "$G/CLAUDE.md.tmpl"; then

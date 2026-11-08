@@ -4,18 +4,21 @@
 
 usage() {
   cat <<'EOF'
-사용법: ./install.sh [--dry-run] [--force] [--no-settings] [--home <dir>] [--uninstall] [--restore <timestamp>] [--yes]
+사용법: ./install.sh [--dry-run] [--force] [--no-settings] [--home <dir>] [--uninstall] [--restore <timestamp>] [--yes] [--help]
 
   --dry-run        아무것도 쓰지 않고 계획만 출력: 파일별 계획과 settings.json diff.
                    --uninstall/--restore 와 함께 쓰면 제거·복구 계획만 출력한다.
-  --force          사용자가 편집한 파일·충돌 파일도 덮어쓰기(백업 후), 사용자가 지운 규칙·파일 복원
+  --force          사용자가 편집한 파일·충돌 파일도 덮어쓰기(백업 후), 사용자가 지운 규칙·파일 복원,
+                   settings.json 의 language·statusLine·worktree.baseRef 도 저장소 값으로 교체
   --no-settings    ~/.claude/settings.json 병합 건너뜀
-  --home <dir>     $HOME 대신 사용할 홈 디렉터리(테스트용; <dir>/.claude 에 설치). 빈 값은 오류(종료 코드 2).
+  --home <dir>     $HOME 대신 사용할 홈 디렉터리(테스트용; <dir>/.claude 에 설치, --home=<dir> 도 가능).
+                   빈 값은 오류(종료 코드 2).
   --uninstall      매니페스트에 기록된 파일과 관리 설정 항목 제거(사용자 편집은 유지)
   --restore <ts>   backups/dev_settings/<ts>* 백업을 되돌림(요약에 찍힌 이름, 앞부분만, 또는 전체 경로)
-  --yes            확인 질문 없이 진행. 비대화형 실행(CI·파이프·Claude Code 의 Bash 도구)에서는 파괴적 작업
+  --yes, -y        확인 질문 없이 진행. 비대화형 실행(CI·파이프·Claude Code 의 Bash 도구)에서는 파괴적 작업
                    (--uninstall, --restore, 구버전 파일 삭제, --force 덮어쓰기)에 필수 — 없으면 종료 코드 2.
                    단순 설치(추가·백업만 하는 경우)는 질문 없이 진행한다.
+  -h, --help       이 도움말
 
 종료 코드: 0 성공(validate OK/WARN) · 1 실패(롤백됨) · 2 사용법 오류 · 3 설치됐지만 validate FAIL
 EOF
@@ -45,7 +48,7 @@ print_next_steps() {
   log "── 다음 단계 ──"
   info "1. Claude Code 를 재시작한다(설정·훅 재로드)."
   info "2. 아무 프로젝트에서 /harness-check 로 설치 상태를 확인한다."
-  info "3. 프로젝트 적용: ./apply.sh <project-dir> --profile auto  또는 프로젝트 안에서 /harness-init"
+  info "3. 프로젝트 적용: ./apply.sh <project-dir>(언어 프로필은 선택: --profile <이름>|auto)  또는 프로젝트 안에서 /harness-init"
 }
 
 # 매니페스트 기준 제거. 사용자 편집 파일은 유지(WARN). OPT_DRY=1 이면 계획(삭제/갱신 줄과 settings diff)만 출력하고 쓰지 않는다.
@@ -86,7 +89,9 @@ op_uninstall() {
       empty_overlay="$STAGE/empty.json"; printf '{}\n' > "$empty_overlay"
       if python3 -I "$REPO_DIR/scripts/merge-settings.py" --mode install --base "$real" --overlay "$empty_overlay" \
            --manifest "$manifest" --home "$HOME_DIR" --diff --out "$STAGE/settings.json" 2> "$STAGE/err"; then
-        if same_file "$STAGE/settings.json" "$real"; then info "변경 없음  settings.json"
+        if same_file "$STAGE/settings.json" "$real"; then
+          info "변경 없음  settings.json"
+          grep -E '^WARN' "$STAGE/err" | sed 's/^/  settings: /'   # 예: 형식이 틀린 매니페스트 — 지울 관리 항목을 모를 수 있다
         else
           info "갱신  settings.json (관리 항목 제거)"
           grep -E '^(유지\(|WARN)' "$STAGE/err" | sed 's/^/  settings: /'
