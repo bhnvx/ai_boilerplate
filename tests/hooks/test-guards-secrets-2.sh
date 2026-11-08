@@ -80,6 +80,24 @@ tg "grep glob *.{py,ts} → none" none '*.{py,ts}'
 tg "grep glob **/*.{json,secret} → soft ask" ask '**/*.{json,secret}'
 tg "grep glob .[e]nv" deny '.[e]nv'
 
+t_section "R7: {a,b} 대안은 명령마다 256개까지 분류(넘으면 더 펼치지 않고 too-complex 바닥) — {a,b} 16개(대안 6만 5천 개)에 25~30초였다"
+B16=$(awk 'BEGIN{for(i=0;i<16;i++) printf "{a,b}"}')
+t0=$(t_ms); tb "cat {a,b}×16x; cat .env → deny" deny "cat ${B16}x; cat .env"; t1=$(t_ms); trs "{a,b}×16 뒤 cat .env rule" "[secrets:print]"
+t_under "cat {a,b}×16x; cat .env 시간" $((t1 - t0)) 3000
+t0=$(t_ms); tb "cat {a,b}×16x → none(비밀 이름 없음)" none "cat ${B16}x"; t1=$(t_ms)
+t_under "cat {a,b}×16x 시간" $((t1 - t0)) 3000
+t0=$(t_ms); tb "echo token {a,b}×16x → ask(too-complex)" ask "echo token ${B16}x"; t1=$(t_ms); trs "{a,b}×16 too-complex" "[secrets:too-complex]"
+t_under "echo token {a,b}×16x 시간" $((t1 - t0)) 3000
+run "$(t_bash_json "echo token ${B16}x" '' '' '{"agent_id":"sub1","agent_type":"general-purpose"}')"; assert_decision "echo token {a,b}×16x (서브에이전트) → deny" deny
+tb "cat {a,b}.txt → none" none 'cat {a,b}.txt'
+tb "cat {a,.env} → deny" deny 'cat {a,.env}'
+tb "cat {a,b}{c,d}{e,f}{g,h}{i,j}{k,l}.env → deny(첫 대안이 hard)" deny 'cat {a,b}{c,d}{e,f}{g,h}{i,j}{k,l}.env'
+t0=$(t_ms); tg "grep glob {a,b}×16.env → deny" deny "${B16}.env"; t1=$(t_ms)
+t_under "grep glob {a,b}×16.env 시간" $((t1 - t0)) 3000
+t0=$(t_ms); tg "grep glob {a,b}×16.txt → ask(too-complex)" ask "${B16}.txt"; t1=$(t_ms); trs "grep glob {a,b}×16 too-complex" "[secrets:too-complex]"
+t_under "grep glob {a,b}×16.txt 시간" $((t1 - t0)) 3000
+tg "grep glob {src,lib}/*.{ts,tsx} → none" none '{src,lib}/*.{ts,tsx}'
+
 t_section "G19: credential stores and .env variants"
 for p in '~/.config/gh/hosts.yml' '~/.vault-token' '~/.cargo/credentials.toml' '~/.cargo/credentials' '~/.terraform.d/credentials.tfrc.json' '~/.huggingface/token' '~/.cache/huggingface/token' '~/.azure/accessTokens.json' '~/.azure/msal_token_cache.json' 'config/app.env' 'docker/prod.env' '.env~' '.env_prod' '.env_local'; do
   tp "G19 Read $p → deny" deny Read "$p"

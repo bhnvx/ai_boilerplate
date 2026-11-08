@@ -86,7 +86,7 @@ tb "echo x > .env" ask "echo x > .env"
 assert_contains "write rule id" "$(t_reason "$T_OUT")" "[secrets:write]"
 tb "source .env" ask "source .env"
 tb "git add .env" ask "git add .env"
-tb "git diff .env" ask "git diff .env"
+tb "git diff .env" deny "git diff .env"   # F5: git diff 는 비밀 파일 내용을 출력한다
 tb "cp .env.example .env" ask "cp .env.example .env"
 tb "export \$(cat .env)" ask 'export $(cat .env)'
 tb "printenv" ask "printenv"
