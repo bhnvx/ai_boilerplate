@@ -138,6 +138,15 @@ assert_decision() {
 
 t_section() { printf '%s\n' "## $1"; }
 
+# t_ms → 벽시계 ms(python3, 없으면 perl, 둘 다 없으면 0). t_under <이름> <ms> <상한 ms> — 시간 상한(스위트에 같은 이름의 정의가 있으면 그것을 쓴다).
+# 상한은 이 기계 유휴 중앙값(가장 느린 awk)의 2.5배 이상으로 잡고(GitHub macos-latest 는 1.4–1.5배 느리다) 8000 ms 를 넘지 않게 둔다(훅 제한 10초 안)
+t_ms() {
+  if command -v python3 >/dev/null 2>&1; then python3 -I -S -c 'import time; print(int(time.time()*1000))'
+  elif command -v perl >/dev/null 2>&1; then perl -MTime::HiRes=time -e 'printf "%d\n", time*1000'
+  else echo 0; fi
+}
+t_under() { [ "$2" -lt "$3" ] && t_pass "$1 (${2}ms < ${3}ms)" || t_fail "$1" "${2}ms ≥ ${3}ms"; }
+
 t_report() {
   printf '%s: PASS %d / FAIL %d (bash %s)\n' "${0##*/}" "$T_PASS" "$T_FAIL" "$BASH_VERSION"
   [ "$T_FAIL" -eq 0 ] || exit 1

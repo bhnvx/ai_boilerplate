@@ -197,19 +197,20 @@ rm -f "$ECCS" "$TMPDIR"/claude-format-ecc.*
 assert_contains "no settings.json: ruff runs" "$(cat "$LOG")" "ruff format"
 
 t_section "watchdog(CLAUDE_FORMAT_TIMEOUT)"
-mkfake "$FAKE/gofmt" 'sleep 5'
+# 시간은 ms 로 잰다(t_ms·t_under: tests/lib/testlib.sh). 감시가 멈추지 못하면 포매터가 30초를 다 쓰므로 상한과 분명히 갈린다(R5: 초 단위 date 는 ±1초 오차)
+mkfake "$FAKE/gofmt" 'exec sleep 30'
 write "$P/cmd/main.go" 'package main'
-start=$(date +%s)
+t0=$(t_ms)
 CLAUDE_FORMAT_TIMEOUT=1 fmt "$P/cmd/main.go"
-elapsed=$(( $(date +%s) - start ))
-if [ "$elapsed" -le 3 ]; then t_pass "slow formatter killed within ~2s"; else t_fail "slow formatter killed within ~2s" "elapsed=${elapsed}s"; fi
+t1=$(t_ms)
+t_under "slow formatter killed at the 1s timeout" $((t1 - t0)) 4000
 assert_contains "timeout reported" "$(ctx "$T_OUT")" "포매터 실패(gofmt): 시간 초과(1초)"
-# A6: TERM 을 무시하는 포매터는 2초 뒤 KILL
-mkfake "$FAKE/gofmt" 'trap "" TERM; i=0; while [ $i -lt 8 ]; do sleep 1; i=$((i + 1)); done'
-start=$(date +%s)
+# A6: TERM 을 무시하는 포매터는 2초 뒤 KILL(약 3초)
+mkfake "$FAKE/gofmt" 'trap "" TERM; i=0; while [ $i -lt 30 ]; do sleep 1; i=$((i + 1)); done'
+t0=$(t_ms)
 CLAUDE_FORMAT_TIMEOUT=1 fmt "$P/cmd/main.go"
-elapsed=$(( $(date +%s) - start ))
-if [ "$elapsed" -le 5 ]; then t_pass "TERM-ignoring formatter KILLed (~3s)"; else t_fail "TERM-ignoring formatter KILLed (~3s)" "elapsed=${elapsed}s"; fi
+t1=$(t_ms)
+t_under "TERM-ignoring formatter KILLed (~3s)" $((t1 - t0)) 8000
 assert_contains "TERM-ignoring: timeout reported" "$(ctx "$T_OUT")" "포매터 실패(gofmt): 시간 초과(1초)"
 rm -f "$FAKE/gofmt"
 

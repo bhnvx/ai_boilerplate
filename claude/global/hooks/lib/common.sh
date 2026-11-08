@@ -10,6 +10,19 @@ HOOK_JSON_TOOL=""
 HOOK_NAME=${0##*/}; HOOK_NAME=${HOOK_NAME%.sh}
 HOOK_EX=""; HOOK_ABS=""; HOOK_PROT=""; HOOK_PROT_LOADED=0; HOOK_BYTE=0
 HOOK_JSON_MAX=10000   # JSON 빌더가 문자열 값을 자르는 길이(코드 포인트 기준 — 바이트가 아님; C8)
+# 작업 시간 상한(R5): 훅 제한 시간(settings.json 10초)을 넘기면 판정 없이 통과(fail-open)하므로, 가드는 세그먼트·토큰 반복마다
+# hook_time_up 으로 경과 시간을 본다. HOOK_TLIM 초(기본 6; 테스트 전용 env, 숫자가 아니면 상한 없음)에 닿으면 남은 부분을 보지 않고
+# too-complex 를 바닥으로 둔다. 개수 상한(세그먼트·토큰·fork)이 평소의 큰 명령을 먼저 막고, 이것은 느린 기계·부하에서의 마지막 안전판이다.
+# SECONDS 는 정수 초라 실제로는 5~6초에 멈춘다(환경에서 물려받은 값은 버린다)
+SECONDS=0
+HOOK_TLIM_S=${HOOK_TLIM:-6}; case $HOOK_TLIM_S in ''|*[!0-9]*) HOOK_TLIM_S=999999 ;; esac
+hook_time_up() { [ "$SECONDS" -ge "$HOOK_TLIM_S" ]; }
+# SP_SUBFLAT(lib/shellparse.sh P-D)은 가드가 가장 깊은 재파싱 한 번에만 붙이는 내부 인터페이스다 — 환경에서 물려받은 값은 버린다
+# (남아 있으면 최상위·얕은 재파싱의 sub RAW 까지 평탄해져 문자열 안의 줄·heredoc 종료 토큰이 사라진다; R6)
+unset SP_SUBFLAT
+# hook_longhead <세그먼트(MASKED)> → 0 이면 첫 단어(명령 이름)가 4096자를 넘는다 — 실행 파일 이름은 PATH_MAX 를 넘을 수 없다. R5: 그런 머리에
+# ${x%% *}·${x#* }·${x##*/} 같은 패턴 제거를 쓰면 bash 3.2 에서 길이의 제곱(150 KB 머리에 20초 넘게)이라 가드는 그 세그먼트를 보지 않고 too-complex 바닥
+hook_longhead() { [ "${#1}" -gt 4096 ] || return 1; case ${1:0:4096} in *[[:space:]]*) return 1 ;; esac; return 0; }
 
 # python3 폴백: 인수 VAR=.a.b|.c 마다 첫 non-null/non-false 값을 NUL 로 이어 출력. 선두 필드 "ok".
 # 잘못된 UTF-8·홀로 남은 서로게이트 이스케이프(\ud800)는 U+FFFD/'?' 로 바꾸고 계속 진행한다(C3).
@@ -125,6 +138,13 @@ hook_load_pretooluse() {
     H_GLOB=.tool_input.glob H_PATTERN=.tool_input.pattern H_EVENT=.hook_event_name \
     H_SOURCE=.source H_AGENT=.agent_type H_AGENT_ID=.agent_id || return $?
   [ -n "$H_MODE" ] || H_MODE=default
+  # 0x1E·0x1F 는 공용 파서가 셸 문자열 안의 개행·탭을 담는 예약 바이트다(lib/shellparse.sh, R4·R6). 명령에 든 0x1E 를 그대로 두면 파서가
+  # 줄 구분으로 읽어 heredoc 본문이 일찍 끝나고 뒤 명령이 따옴표에 묻힐 수 있고, 0x1F 는 탭(공백류)으로 되살아난다. 셸에서 둘은 보통 글자라
+  # (IFS 가 아니다) 공백으로 바꾸면 한 단어가 갈라져 뒤 명령이 숨는다 — heredoc 구분자(cat <<E␞F 의 본문이 끝나지 않는다)·주석(echo a␞#; rm -rf /
+  # 의 # 가 단어 처음이 된다)·대입 경계(x=␞1 git push …). 그래서 둘 다 쓰지 않는 보통 글자 0x1D 로 바꾼다(R6 통합: R4 의 공백 변환을 고친다).
+  # R5: ${H_CMD//…} 는 bash 3.2 에서 바꿀 때마다 문자열을 다시 만들어 0x1E 1만 개(10 KB)에 40초를 넘겼다(세 가드가 모두 판정 없이 통과) —
+  # tr 1회(선형, 두 바이트를 한 번에). 끝의 줄바꿈은 명령 치환이 지우므로 표시 글자로 지킨다. 둘 중 하나라도 있을 때만 fork 한다
+  case $H_CMD in *$'\036'*|*$'\037'*) H_CMD=$(printf '%s.' "$H_CMD" | LC_ALL=C tr '\036\037' '\035\035'); H_CMD=${H_CMD%.} ;; esac
   return 0
 }
 

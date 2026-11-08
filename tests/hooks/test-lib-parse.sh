@@ -87,6 +87,6 @@ cmd='cd "/Users/some one/project dir" && git status --porcelain && uv run --env-
 now() { if command -v python3 >/dev/null 2>&1; then python3 -I -S -c 'import time; print(time.time())'; else date +%s; fi; }
 s=$(now); i=0; while [ "$i" -lt 100 ]; do sp_segments "$cmd" >/dev/null; i=$((i + 1)); done; e=$(now)
 el=$(printf '%s %s' "$e" "$s" | awk '{ printf "%.3f", $1 - $2 }')
-ok=$(printf '%s' "$el" | awk '{ print ($1 < 1.5) ? "yes" : "no" }')
-assert_eq "perf: 100x sp_segments < 1.5s (took ${el}s, len ${#cmd})" yes "$ok"
+ok=$(printf '%s' "$el" | awk '{ print ($1 < 3.0) ? "yes" : "no" }')   # R5: 1.5 → 3.0초(gawk 는 호출마다 시작이 느려 중앙값 1.1초 — 2.5배 여유)
+assert_eq "perf: 100x sp_segments < 3.0s (took ${el}s, len ${#cmd})" yes "$ok"
 t_report
