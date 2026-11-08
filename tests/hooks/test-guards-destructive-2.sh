@@ -209,16 +209,16 @@ run 'not json'; assert_decision "garbage without tool_name → none" none
 run '{"tool_name":"Bash","tool_input":{"command":"ls"'; assert_decision "truncated JSON with tool_name → ask" ask
 assert_eq "parse-error output is valid JSON" 0 "$(t_json_valid "$T_OUT"; echo $?)"
 
-t_section "G6 / C2: large inputs stay fast (200KB heredoc < 2s)"
+t_section "G6 / C2: large inputs stay fast (200KB heredoc < 3.5s — R5: gawk 중앙값 1.1초의 2.5배 이상)"
 awk 'BEGIN{for(i=0;i<2800;i++) printf "x = compute(value_%06d) + offset  # filler line for the heredoc body\n", i}' >"$T_TMP/body.txt"
 { printf 'cat > src/app.py <<'"'"'EOF'"'"'\n'; cat "$T_TMP/body.txt"; printf 'EOF\ngit status'; } >"$T_TMP/cmd.txt"
 t0=$(t_ms); run "$(t_bash_json_file "$T_TMP/cmd.txt")"; t1=$(t_ms)
 assert_decision "200KB heredoc write + git status → none" none
-t_under "200KB heredoc ($(wc -c <"$T_TMP/cmd.txt" | tr -d ' ') bytes)" $((t1 - t0)) 2000
+t_under "200KB heredoc ($(wc -c <"$T_TMP/cmd.txt" | tr -d ' ') bytes)" $((t1 - t0)) 3500
 { printf 'cat > a.txt <<EOF\n'; cat "$T_TMP/body.txt"; printf 'EOF\nrm -rf ~'; } >"$T_TMP/cmd.txt"
 t0=$(t_ms); run "$(t_bash_json_file "$T_TMP/cmd.txt")"; t1=$(t_ms)
 assert_decision "200KB heredoc then rm -rf ~ → deny" deny
-t_under "200KB heredoc + rm" $((t1 - t0)) 2000
+t_under "200KB heredoc + rm" $((t1 - t0)) 3500
 { printf "echo '"; awk 'BEGIN{while(i++<100000) printf "A"}'; printf "' > blob.txt && git status"; } >"$T_TMP/cmd.txt"
 t0=$(t_ms); run "$(t_bash_json_file "$T_TMP/cmd.txt")"; t1=$(t_ms)
 assert_decision "100KB quoted word → none" none
