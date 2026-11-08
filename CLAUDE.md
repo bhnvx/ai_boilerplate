@@ -1,13 +1,13 @@
 # dev_settings — 저장소 작업 가이드
 
-Claude Code 보일러플레이트 저장소다. 언어·프레임워크 무관한 전역 하네스와 프로젝트 템플릿이 핵심이고, 언어 프로필은 `--profile`(또는 auto 감지)로만 적용하는 선택형 add-on이다.
+Claude Code 보일러플레이트 저장소다. 언어·프레임워크 무관한 전역 하네스와 프로젝트 템플릿이 핵심이고, 언어 프로필은 `apply.sh --profile <이름>|auto`를 줄 때만 적용하는 선택형 add-on이다(생략하면 적용하지 않는다).
 
 ## 구조
 - `claude/global/` → `~/.claude/`에 설치(install.sh): settings.json, rules/, agents/, hooks/, skills/, CLAUDE.md.tmpl
 - `claude/project-template/` → 프로젝트에 적용(apply.sh): CLAUDE.md.tmpl, CLAUDE.local.md.example, gitignore.claude, dot-claude/
 - `profiles/<name>/` — 선택형 프로필(rules/*.md + settings.fragment.json)
-- `scripts/` — merge-settings.py, validate.sh, update-schema.sh
-- `tests/` — run-all.sh, lib/, hooks/, install/
+- `scripts/` — merge-settings.py, validate.sh, update-schema.sh, lib/(install.sh·apply.sh 공용 install-*.sh)
+- `tests/` — run-all.sh, lib/, hooks/, skills/, install/
 - `schemas/` — settings JSON 스키마 스냅샷
 - `vscode/`, `copilot/` — 에디터·Copilot 설정(Claude Code와 별개)
 - 상세 설명은 README.md.
@@ -19,7 +19,8 @@ Claude Code 보일러플레이트 저장소다. 언어·프레임워크 무관�
   - GNU 전용 금지: `sed -i`, `readlink -f`, `realpath`, `stat`, `sha256sum`, `timeout`, `grep -P`, `date -d`
   - 훅: `set -u` 금지, 결정은 stdout JSON + exit 0으로만(exit 2 금지), jq·python3가 없으면 fail-open
   - 모든 `.sh`는 `/bin/bash -n` 통과
-- 변경 후 실행한다: `bash tests/run-all.sh`, `bash scripts/validate.sh --repo`
+- awk는 POSIX 기능만 쓰고 macOS `/usr/bin/awk`(BWK)·gawk·mawk에서 출력이 같아야 한다(CI가 셋 다 돌린다): `gensub`·`asort`·`strftime`·`systime`·`PROCINFO`·`IGNORECASE`·`FPAT`·`nextfile` 금지
+- 변경 후 실행한다: `bash tests/run-all.sh`, `bash scripts/validate.sh --repo --quiet`(`--quiet` 없이는 run-all.sh를 한 번 더 돌린다)
 - 훅을 고치면 `tests/hooks/`에 통과·차단 케이스를 함께 추가한다.
 - 템플릿 명명은 `CLAUDE.md.tmpl`, `dot-claude/`로 한다:
   - 이유: 이 저장소에서 작업할 때 Claude Code가 하위 `CLAUDE.md`·`.claude/rules/`를 불러오지 않게 하려는 것
