@@ -1,6 +1,13 @@
 # AI BOILERPLATE
 
+[![CI](https://github.com/bhnvx/ai_boilerplate/actions/workflows/ci.yml/badge.svg)](https://github.com/bhnvx/ai_boilerplate/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+![bash 3.2+](https://img.shields.io/badge/bash-3.2%2B-4EAA25)
+![macOS | Linux](https://img.shields.io/badge/platform-macOS%20%7C%20Linux-lightgrey)
+
 Claude Code 전역 하네스(설정·훅·규칙·에이전트·스킬)와 프로젝트 템플릿을 한 저장소에서 관리하는 보일러플레이트다. 언어·프레임워크와 무관하게 동작하고, 언어별 규칙은 원할 때만 프로필로 얹는다.
+
+[빠른 시작](#2-빠른-시작) · [구성 요소](#3-구성-요소) · [설정](#4-자주-쓰는-설정) · [설치·되돌리기](#5-설치--되돌리기) · [제한](#7-알아-둘-제한) · [FAQ](#8-자주-묻는-질문) · [문서](#9-문서) · [기여](#12-기여--라이선스)
 
 ## 1. 무엇을 해 주나
 
@@ -20,11 +27,27 @@ Claude Code 전역 하네스(설정·훅·규칙·에이전트·스킬)와 프�
 | 서브에이전트의 마이그레이션 생성·적용·수정 | 차단 |
 | 파일을 고치고 테스트 없이 "완료"라고 보고 | 사용자에게 알림 |
 
+Claude가 아래 명령을 실행하려 할 때 가드 훅이 내는 사유다(실제 출력). 대괄호 안은 규칙 ID다.
+
+```text
+$ cat .env
+차단 [secrets:print]: cat .env — 비밀 파일 내용 출력
+
+$ rm -rf ~
+차단 [destructive:rm-root]: 루트/홈 디렉터리 삭제: ~ — rm -rf ~
+
+$ git push --force origin main
+차단 [destructive:git-force-protected]: 보호 브랜치 강제 푸시 — git push --force origin main
+
+$ git push origin main
+확인 필요 [destructive:git-push-protected]: 보호 브랜치로 푸시 — git push origin main
+```
+
 ## 2. 빠른 시작
 
 ```bash
-git clone https://github.com/bhnvx/ai_boilerplate.git ~/vsc/ai_boilerplate
-cd ~/vsc/ai_boilerplate
+git clone https://github.com/bhnvx/ai_boilerplate.git
+cd ai_boilerplate
 ./install.sh --dry-run   # 파일별 계획과 settings diff만 출력(아무것도 쓰지 않음)
 ./install.sh             # ~/.claude 에 설치(백업·매니페스트 포함)
 ```
@@ -32,7 +55,7 @@ cd ~/vsc/ai_boilerplate
 1. Claude Code를 재시작한다(훅·규칙·스킬은 세션 시작 때 로드).
 2. 아무 세션에서 `/harness-check` → FAIL이 없는지 확인한다.
 3. 프로젝트에 적용한다. 둘 중 하나:
-   - 터미널: `./apply.sh ~/vsc/<프로젝트> --profile auto`
+   - 터미널: `./apply.sh <프로젝트 경로> --profile auto`
    - 해당 프로젝트 세션: `/harness-init` (스택 감지 → 실행할 명령 확인 → `apply.sh` 실행)
 4. 생성된 `CLAUDE.md`의 TODO를 채우고 `.claude/settings.json`의 allow 목록을 검토한다.
 5. 커밋할 파일만 커밋한다([install.md](docs/install.md) 4절).
@@ -150,6 +173,7 @@ env 변수로 조정한다. 개인 전역은 `~/.claude/settings.json`의 `env`,
 ```bash
 ./install.sh --dry-run               # 계획만 출력
 ./install.sh                         # 설치(바뀌는 파일은 백업)
+git pull && ./install.sh             # 업데이트(손대지 않은 파일만 갱신)
 ./install.sh --uninstall             # 제거(사용자가 고친 파일·설정은 남긴다)
 ./install.sh --restore <타임스탬프>   # 백업으로 되돌리기
 ./apply.sh <프로젝트> [--profile auto] [--with-format-hook] [--dry-run]
@@ -184,7 +208,30 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 
 전체 목록은 [docs/limitations.md](docs/limitations.md)에 있다.
 
-## 8. 문서
+## 8. 자주 묻는 질문
+
+**기존 `~/.claude/settings.json`을 덮어쓰나?**
+덮어쓰지 않고 병합한다. `model`·`env`·`enabledPlugins` 같은 사용자 값은 그대로 두고, 바뀌는 파일은 `~/.claude/backups/ai_boilerplate/`에 백업한다. `./install.sh --dry-run`으로 바뀔 내용을 먼저 볼 수 있다.
+
+**훅이 정상적인 명령을 막는다.**
+사유에 붙은 규칙 ID로 [docs/hooks.md](docs/hooks.md)에서 판정 근거를 찾는다. 보호 브랜치와 비밀 파일 예외는 4절의 변수로 조정하고, 가드 하나를 통째로 끄려면 `CLAUDE_GUARD_SECRETS=off`처럼 3.1절의 스위치를 쓴다. 잘못된 판정이면 '가드 오탐·미탐' 이슈로 알려 주면 고친다.
+
+**업데이트는 어떻게 하나?**
+저장소에서 `git pull` 뒤에 `./install.sh`를 다시 실행한다. 손대지 않은 파일만 갱신하고, 사용자가 고친 파일은 그대로 둔 채 옆에 `<파일>.ai_boilerplate.new`를 만든다.
+
+**저장소를 다른 경로로 옮겨도 되나?**
+된다. 설치본은 복사본이라 훅은 그대로 동작한다. `/harness-init`이 `apply.sh`를 찾을 수 있게 옮긴 뒤 `./install.sh`를 한 번 더 실행한다.
+
+**ECC 같은 다른 플러그인과 함께 쓸 수 있나?**
+쓸 수 있다. ECC를 켠 환경을 기준으로 기능이 겹치지 않게 나눴다([docs/components.md](docs/components.md) 5절). 다만 이 저장소의 플러그인 배포판과 `install.sh`는 함께 쓰지 않는다. 훅이 두 번 실행된다.
+
+**제거하려면?**
+`./install.sh --uninstall`을 실행한다. 설치가 넣은 파일과 설정 항목만 지우고 사용자가 고친 것은 남긴다. `apply.sh`가 프로젝트에 만든 파일(`CLAUDE.md`, `.claude/` 등)은 프로젝트의 것이라 직접 지운다.
+
+**Windows에서 되나?**
+검증하지 않았다. macOS와 Linux에서만 테스트한다.
+
+## 9. 문서
 
 | 문서 | 내용 |
 |---|---|
@@ -195,7 +242,7 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 | [docs/limitations.md](docs/limitations.md) | 알려진 제한 전체 |
 | [docs/development.md](docs/development.md) | 저장소 구조, 테스트·검증·CI, 파일 이력 |
 
-## 9. 검증 기준
+## 10. 검증 기준
 
 | 항목 | 기준 |
 |---|---|
@@ -207,9 +254,15 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 | 선택 도구 | `jq`(훅 JSON 파싱, 없으면 `python3`로 대체. 둘 다 없으면 훅은 통과(fail-open)) |
 | CI | ubuntu-latest(gawk · mawk), macos-latest |
 
-## 10. 다음 단계
+## 11. 다음 단계
 
 - sandbox 프로필 실측: macOS(Seatbelt)와 Linux(bubblewrap)의 실제 세션에서 경계와 승인 흐름 확인
 - 플러그인 배포판 실측: 실제 세션에서 훅 발화와 이름공간이 붙은 스킬·에이전트 동작 확인
 - 플러그인 배포판에 규칙을 싣는 방법(플러그인은 `rules/`를 실을 수 없다)
-- LICENSE 추가(없으면 공식 플러그인 디렉터리에 제출할 수 없다)
+
+## 12. 기여 · 라이선스
+
+- 버그 신고, 가드 오탐·미탐 제보, PR을 받는다. 방법은 [CONTRIBUTING.md](CONTRIBUTING.md)에 있다.
+- 보안 문제는 공개 이슈로 올리지 말고 [SECURITY.md](SECURITY.md)를 따른다.
+- 변경 이력은 [CHANGELOG.md](CHANGELOG.md)에 있다.
+- [MIT 라이선스](LICENSE)로 배포한다.
