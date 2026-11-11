@@ -1,0 +1,50 @@
+name: 버그 신고
+description: 설치·적용·훅·스킬이 문서와 다르게 동작한다
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        비밀 값·토큰·내부 호스트·개인 정보는 붙여 넣지 않는다. 경로에 든 사용자 이름은 가려도 된다.
+        훅이 명령을 잘못 막았거나 통과시킨 경우는 '가드 오탐·미탐' 템플릿을 쓴다.
+  - type: textarea
+    id: what
+    attributes:
+      label: 무슨 일이 일어났나
+      description: 실행한 명령과 출력을 그대로 붙인다.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 기대한 동작
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: 설치 방식
+      options:
+        - install.sh
+        - 플러그인
+        - 설치하지 않음(저장소에서 직접 실행)
+    validations:
+      required: true
+  - type: input
+    id: commit
+    attributes:
+      label: 저장소 커밋
+      description: "`git rev-parse --short HEAD` 출력"
+  - type: input
+    id: env
+    attributes:
+      label: 환경
+      description: OS, bash 버전(`bash --version` 첫 줄), Claude Code 버전
+      placeholder: "macOS 15, bash 3.2.57, Claude Code 2.1.318"
+  - type: textarea
+    id: check
+    attributes:
+      label: 점검 출력
+      description: "있으면 붙인다: 세션의 `/harness-check` 결과 또는 `bash scripts/validate.sh --installed` 출력"
+      render: text

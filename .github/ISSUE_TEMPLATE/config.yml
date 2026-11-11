@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: 보안 취약점
+    url: https://github.com/bhnvx/ai_boilerplate/security/policy
+    about: 공개 이슈로 올리지 않는다. SECURITY.md의 절차를 따른다.
+  - name: 문서
+    url: https://github.com/bhnvx/ai_boilerplate/tree/main/docs
+    about: 훅 판정 규칙, 설치 동작, 알려진 제한

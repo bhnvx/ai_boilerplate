@@ -9,6 +9,10 @@
 ```
 ai_boilerplate/
 ├── README.md                       개요
+├── LICENSE                         MIT
+├── CONTRIBUTING.md                 기여 방법(이슈 · 개발 환경 · 함께 고칠 것 · 커밋과 PR)
+├── SECURITY.md                     보안 신고 범위와 방법
+├── CHANGELOG.md                    사용자에게 보이는 변경 이력
 ├── docs/                           상세 문서(훅 · 설치 · 구성 요소 · 커스터마이즈 · 제한 · 저장소 구조)
 ├── CLAUDE.md                       이 저장소 작업용 지침
 ├── install.sh                      claude/global → ~/.claude 설치
@@ -38,7 +42,7 @@ ai_boilerplate/
 ├── schemas/claude-code-settings.schema.json
 ├── scripts/                        merge-settings.py · validate.sh · update-schema.sh · lib/(install·apply 공용)
 ├── tests/                          run-all.sh · lib/ · hooks/ · skills/ · install/
-├── .github/workflows/ci.yml
+├── .github/                        workflows/ci.yml · ISSUE_TEMPLATE/(버그 신고 · 가드 오탐·미탐 · 기능 제안) · PULL_REQUEST_TEMPLATE.md
 ├── vscode/settings.json            VS Code 사용자 설정 참고본(설치 대상 아님, 수동 복사)
 └── copilot/copilot-instructions.md  GitHub Copilot 지침 참고본(설치 대상 아님)
 ```

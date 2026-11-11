@@ -1,0 +1,76 @@
+name: 가드 오탐·미탐
+description: 훅이 정상 명령을 막았거나, 막아야 할 명령을 통과시켰다
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        비밀 값·토큰·내부 호스트는 가짜 값으로 바꿔서 적는다.
+        훅은 보안 경계가 아니라서 우회 방법도 여기에 공개로 올려도 된다. 설치 스크립트나 훅이 입력을 명령으로 실행하는 문제처럼 SECURITY.md가 정한 취약점만 비공개로 알린다.
+  - type: textarea
+    id: command
+    attributes:
+      label: 명령 또는 도구 입력
+      description: Bash 명령이면 명령 한 줄, Read·Edit·Write면 도구 이름과 파일 경로
+      render: text
+    validations:
+      required: true
+  - type: dropdown
+    id: guard
+    attributes:
+      label: 가드
+      options:
+        - guard-secrets
+        - guard-destructive
+        - guard-migrations
+        - 모르겠다
+    validations:
+      required: true
+  - type: dropdown
+    id: actual
+    attributes:
+      label: 실제 판정
+      options:
+        - 차단(deny)
+        - 확인 요청(ask)
+        - 통과
+    validations:
+      required: true
+  - type: dropdown
+    id: expected
+    attributes:
+      label: 기대한 판정
+      options:
+        - 차단(deny)
+        - 확인 요청(ask)
+        - 통과
+    validations:
+      required: true
+  - type: input
+    id: reason
+    attributes:
+      label: 훅이 낸 사유
+      description: 규칙 ID가 든 메시지를 그대로 적는다. 통과했으면 비워 둔다.
+      placeholder: "차단 [secrets:print]: cat .env — 비밀 파일 내용 출력"
+  - type: dropdown
+    id: mode
+    attributes:
+      label: 권한 모드
+      options:
+        - default
+        - acceptEdits
+        - plan
+        - dontAsk
+        - auto
+        - bypassPermissions
+        - 모르겠다
+  - type: input
+    id: env
+    attributes:
+      label: 환경
+      description: 저장소 커밋(`git rev-parse --short HEAD`), OS, bash 버전
+  - type: textarea
+    id: context
+    attributes:
+      label: 추가 맥락
+      description: 서브에이전트에서 실행했는지, 관련 env 변수(`CLAUDE_GUARD_*`) 설정, 훅 로그(`CLAUDE_HOOKS_LOG`) 등
