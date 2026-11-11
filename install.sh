@@ -65,6 +65,9 @@ if [ "$OPT_DRY" = 1 ]; then
 fi
 
 CUR_COMMIT=$(git -C "$REPO_DIR" rev-parse HEAD 2>/dev/null || printf unknown)
+# 기록된 저장소 경로(/harness-init 이 apply.sh 를 찾는 데 쓴다). 저장소를 옮겼으면 지금 경로와 다르다.
+REPO_REC=""
+if [ -f "$CLAUDE_DIR/ai_boilerplate.repo" ]; then IFS= read -r REPO_REC < "$CLAUDE_DIR/ai_boilerplate.repo"; fi
 if plan_has_changes || [ "$N_KEEP" -gt 0 ]; then
   if [ "$N_REMOVE" -gt 0 ] || { [ "$OPT_FORCE" = 1 ] && [ "$N_UPDATE" -gt 0 ]; }; then
     what="구버전 파일 삭제"; [ "$N_REMOVE" -gt 0 ] || what="--force 덮어쓰기"
@@ -75,6 +78,10 @@ if plan_has_changes || [ "$N_KEEP" -gt 0 ]; then
 elif [ -z "$M_FILE" ] || [ "$M_COMMIT" != "$CUR_COMMIT" ]; then
   tx_manifest
   log "변경 없음 — 매니페스트만 갱신(커밋 $CUR_COMMIT)."
+elif [ "$REPO_REC" != "$REPO_DIR" ]; then
+  # 파일과 커밋이 같아도 저장소 위치가 바뀌었으면 경로 기록(ai_boilerplate.repo, 매니페스트의 repo)은 새로 쓴다.
+  tx_manifest
+  log "변경 없음 — 저장소 경로만 갱신($REPO_DIR)."
 else
   log "변경 없음 — 이미 최신 상태."
 fi

@@ -138,6 +138,21 @@ if [ ! -f "$RC_DIR/install.sh" ]; then skip "repo copy cases" "cp -R 실패"; el
   assert_same "symlinked ~/.claude: repo copy untouched" "$TROOT/rc.before" "$TROOT/rc.after"
   assert_no_file "symlinked ~/.claude: no CLAUDE.md written into the repo" "$RC_DIR/claude/global/CLAUDE.md"
 
+  echo "## (E8b) 저장소를 옮긴 뒤 재설치 → 파일·커밋이 같아도 저장소 경로 기록 갱신"
+  new_home; HM="$NEW_HOME"; CM="$HM/.claude"
+  /bin/bash "$RC_DIR/install.sh" --home "$HM" > "$OUT" 2>&1 < /dev/null; RC=$?
+  assert_install_ok "moved repo: first install exit 0"
+  assert_eq "moved repo: repo path recorded" "$(cd -P -- "$RC_DIR" && pwd -P)" "$(cat "$CM/ai_boilerplate.repo" 2>/dev/null)"
+  RM_DIR="$TROOT/repo moved"; mv "$RC_DIR" "$RM_DIR"; RM_REAL=$(cd -P -- "$RM_DIR" && pwd -P)
+  /bin/bash "$RM_DIR/install.sh" --home "$HM" > "$OUT" 2>&1 < /dev/null; RC=$?
+  assert_install_ok "moved repo: reinstall exit 0"
+  assert_contains "moved repo: path-only update message" "$OUT" "저장소 경로만 갱신"
+  assert_eq "moved repo: repo path updated" "$RM_REAL" "$(cat "$CM/ai_boilerplate.repo" 2>/dev/null)"
+  assert_eq "moved repo: manifest repo updated" "$RM_REAL" "$(jq_py "$CM/ai_boilerplate.manifest.json" 'd["repo"]')"
+  /bin/bash "$RM_DIR/install.sh" --home "$HM" > "$OUT" 2>&1 < /dev/null; RC=$?
+  assert_contains "moved repo: next run is a no-op" "$OUT" "이미 최신 상태"
+  mv "$RM_DIR" "$RC_DIR"
+
   echo "## (E9) 저장소 훅에 문법 오류 → 스테이지 검증 실패(종료 코드 1), 스테이지 정리, 파일 미배치"
   printf '\nif [ ; then\n' >> "$RC_DIR/claude/global/hooks/statusline.sh"
   new_home; HS="$NEW_HOME"
