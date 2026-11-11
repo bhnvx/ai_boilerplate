@@ -186,6 +186,14 @@ hook_emit_context() {
   __hook_json "$1" additionalContext "$2"
 }
 
+# hook_emit_system <text> — {"systemMessage": …} 한 줄: 사용자에게 보이는 경고(모델에는 전달되지 않는다). Stop·SubagentStop 알림용
+hook_emit_system() {
+  hook_detect_parser || return 1
+  if [ "$HOOK_JSON_TOOL" = jq ]; then jq -cn --arg m "$1" --argjson n "$HOOK_JSON_MAX" '{systemMessage:($m|.[0:$n])}'
+  else python3 -I -S -c 'import json,sys
+print(json.dumps({"systemMessage":sys.argv[2].encode("utf-8","replace").decode("utf-8")[:int(sys.argv[1])]}))' "$HOOK_JSON_MAX" "$1"; fi
+}
+
 # hook_off <VAR_NAME> — 값이 off|0|false|no (대소문자 무시) 이면 0
 hook_off() {
   local __n=$1 __v

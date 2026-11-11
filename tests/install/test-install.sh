@@ -48,11 +48,14 @@ if need "install: settings" "$G/settings.json"; then
   hook_commands "$S" > "$TROOT/cmds.txt"
   for h in guard-secrets guard-destructive guard-migrations; do assert_contains "settings: PreToolUse $h" "$TROOT/cmds.txt" "PreToolUse	\"\$HOME\"/.claude/hooks/run-hook.sh $h"; done
   assert_contains "settings: SessionStart session-context" "$TROOT/cmds.txt" "SessionStart	\"\$HOME\"/.claude/hooks/run-hook.sh session-context"
+  assert_contains "settings: Stop stop-verify" "$TROOT/cmds.txt" "Stop	\"\$HOME\"/.claude/hooks/run-hook.sh stop-verify"
+  assert_contains "settings: SubagentStop subagent-scope" "$TROOT/cmds.txt" "SubagentStop	\"\$HOME\"/.claude/hooks/run-hook.sh subagent-scope"
+  for f in stop-verify.sh subagent-scope.sh lib/transcript.sh; do assert_file "install: hooks/$f" "$C1/hooks/$f"; done
   assert_eq "settings: deny has Read(//**/.env)" True "$(jq_py "$S" '"Read(//**/.env)" in d["permissions"]["deny"]')"
   assert_eq "settings: statusLine command" True "$(jq_py "$S" '"statusline.sh" in d["statusLine"]["command"]')"
   assert_eq "settings: language korean" korean "$(jq_py "$S" 'd["language"]')"
   assert_eq "settings: worktree.baseRef head" head "$(jq_py "$S" 'd["worktree"]["baseRef"]')"
-  assert_eq "manifest: settings.hooks recorded" True "$(jq_py "$C1/dev_settings.manifest.json" 'len(d["settings"]["hooks"])>=4')"
+  assert_eq "manifest: settings.hooks recorded" True "$(jq_py "$C1/dev_settings.manifest.json" 'len(d["settings"]["hooks"])>=6')"
   assert_eq "manifest: deny rules recorded" True "$(jq_py "$C1/dev_settings.manifest.json" '"Read(//**/.env)" in d["settings"]["permissions"]["deny"]')"
 fi
 assert_eq "manifest: files map non-empty" True "$(jq_py "$C1/dev_settings.manifest.json" 'len(d["files"])>0')"

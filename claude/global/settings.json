@@ -38,6 +38,12 @@
     ],
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "\"$HOME\"/.claude/hooks/run-hook.sh session-context", "timeout": 10 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "\"$HOME\"/.claude/hooks/run-hook.sh stop-verify", "timeout": 10 } ] }
+    ],
+    "SubagentStop": [
+      { "hooks": [ { "type": "command", "command": "\"$HOME\"/.claude/hooks/run-hook.sh subagent-scope", "timeout": 10 } ] }
     ]
   },
   "statusLine": { "type": "command", "command": "\"$HOME\"/.claude/hooks/statusline.sh", "padding": 0 }
