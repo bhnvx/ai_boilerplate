@@ -1,0 +1,9 @@
+# Claude Code가 워크트리를 만들 때 함께 복사할 로컬 파일(.gitignore 문법).
+# 패턴에 맞으면서 gitignore된 파일만 복사된다. git이 추적하는 파일은 복사하지 않는다.
+CLAUDE.local.md
+.claude/settings.local.json
+
+# 비밀 파일은 기본으로 넣지 않는다. 넣으면 워크트리마다 사본이 생긴다.
+# 워크트리에서 테스트·실행에 꼭 필요할 때만 아래 주석을 풀고, 운영 자격 증명이 든 파일은 넣지 않는다.
+# .env
+# .env.local

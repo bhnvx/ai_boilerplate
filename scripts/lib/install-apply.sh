@@ -32,6 +32,21 @@ apply_once() {  # <src> <rel> <mode>
   track_commit "$rel"
 }
 
+# 없으면 생성, 있으면 내용이 달라도 유지(--force 로도 덮어쓰지 않는다 — 사용자가 채워 쓰는 파일: .worktreeinclude).
+apply_seed() {  # <src> <rel> <mode>
+  local src="$1" rel="$2" mode="$3" dest="$TARGET/$2"
+  [ -f "$src" ] || { warn "소스 없음(건너뜀): ${src#"$REPO_DIR"/}"; return 0; }
+  if [ ! -e "$dest" ] && [ ! -L "$dest" ]; then
+    plan_line "생성" "$rel"; N_CREATE=$((N_CREATE + 1))
+    [ "$OPT_DRY" = 1 ] || place_file "$src" "$dest" "$mode" || die "복사 실패: $rel"
+  elif same_file "$src" "$dest"; then
+    plan_line "변경 없음" "$rel"; N_SAME=$((N_SAME + 1))
+  else
+    plan_line "유지(기존 파일)" "$rel"; N_KEEP=$((N_KEEP + 1))
+  fi
+  track_commit "$rel"
+}
+
 # 없으면 생성, 같으면 유지, 다르면 .dev_settings.new 를 옆에 둠(--force 면 백업 후 덮어쓰기).
 apply_sync() {  # <src> <rel> <mode>
   local src="$1" rel="$2" mode="$3" dest="$TARGET/$2" new

@@ -30,6 +30,7 @@ allowed-tools:
    - 프로필은 선택형 add-on이다. 공통 템플릿은 언어·프레임워크와 무관하게 항상 적용된다.
    - 인수에 프로필이 있으면 그것을 쓴다. 없으면 "auto 프로필(추정)"을 제안하고, 사용자가 받아들일 때만 `--profile auto`를 붙인다(apply.sh는 `--profile`을 생략하면 프로필을 적용하지 않는다).
    - 여러 개는 `--profile`을 반복한다(예: `--profile python --profile django`). 감지 결과가 없거나 사용자가 프로필을 원하지 않으면 `--profile` 없이 실행해 공통 템플릿만 적용한다.
+   - `sandbox` 프로필(Bash 명령을 OS 샌드박스 안에서 실행)은 추정에 넣지 않는다. 사용자가 요청할 때만 `--profile sandbox`를 더한다.
    - `--with-format-hook`은 프로젝트에 포매터 설정(ruff·black·prettier·biome·gofmt 등)이 있으면 권한다. ECC quality-gate는 기본적으로 검사만 하므로 겹치지 않는다. `ECC_QUALITY_GATE_FIX=true`일 때만 포맷 훅이 ECC가 고치는 타입을 건너뛴다(위 "ECC 플러그인" 줄 참고).
    - 팀원도 같은 커밋 규칙을 쓰게 하려면 `--team`(전역 git.md를 `.claude/rules/git.md`로 복사)을 제안한다.
 4. 미리보기 — 실행할 명령을 보여주고, 원하면 먼저 `--dry-run`으로 계획을 본다. 인수에 `--dry-run`이 있으면 미리보기만 하고 5단계로 넘어가지 않는다.
@@ -55,7 +56,7 @@ allowed-tools:
      - 3: 사용자에게 `/harness-check` 실행을 제안한다.
 6. 결과 요약
    - 생성 / 건너뜀(이미 있음) / `.dev_settings.new` 생성 / 백업 경로.
-   - 커밋할 파일: `CLAUDE.md`, `.gitignore`, `.claude/settings.json`, `.claude/rules/**`, `.claude/hooks/**`(포맷 훅을 넣은 경우).
+   - 커밋할 파일: `CLAUDE.md`, `.gitignore`, `.worktreeinclude`, `.claude/settings.json`, `.claude/rules/**`, `.claude/hooks/**`(포맷 훅을 넣은 경우).
    - 선택: 팀원용 예시(커밋 가능): `CLAUDE.local.md.example`, `.claude/settings.local.json.example`.
    - 커밋하지 않을 파일: `CLAUDE.local.md`, `.claude/settings.local.json`, `*.dev_settings.new` (`.gitignore`에 추가됨).
    - apply.sh가 출력한 TODO 목록(CLAUDE.md TODO 채우기, allow 목록 검토)을 그대로 전달한다.

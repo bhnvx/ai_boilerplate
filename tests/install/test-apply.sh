@@ -141,6 +141,51 @@ if need "agents-md: template" "$PT/CLAUDE.md.tmpl"; then
   assert_eq "existing-md: --force made a backup" True "$( [ -n "$(ls -d "$HM/.claude/backups/dev_settings/apply/existing dir"/* 2>/dev/null)" ] && echo True || echo False)"
 fi
 
+echo "## (13b) .worktreeinclude: 없으면 생성, 있으면 --force 로도 유지"
+if need "worktreeinclude: template" "$PT/dot-worktreeinclude" "$PT/gitignore.claude"; then
+  assert_same "worktreeinclude: created from template" "$REPO/$PT/dot-worktreeinclude" "$P/.worktreeinclude"
+  assert_eq "worktreeinclude: template copies no secret file by default" 0 "$(grep -cE '^[^#]*\.env' "$REPO/$PT/dot-worktreeinclude")"
+  # 패턴에 맞으면서 gitignore된 파일만 복사되므로, 템플릿의 항목은 gitignore.claude 가 제외하는 파일이어야 한다
+  while IFS= read -r line; do
+    case $line in ''|'#'*) continue ;; esac
+    assert_eq "worktreeinclude: [$line] is ignored by gitignore.claude" 1 "$(grep -cxF -- "$line" "$REPO/$PT/gitignore.claude")"
+  done < "$REPO/$PT/dot-worktreeinclude"
+  new_proj wti; PW="$NEW_PROJ"; printf '.env\n' > "$PW/.worktreeinclude"
+  run_apply "$HM" "$PW"
+  assert_eq "worktreeinclude(existing): kept" ".env" "$(cat "$PW/.worktreeinclude")"
+  assert_matches "worktreeinclude(existing): plan says kept" "$OUT" '유지\(기존 파일\) +\.worktreeinclude'
+  assert_contains "worktreeinclude: listed as a file to commit" "$OUT" "  .worktreeinclude"
+  run_apply "$HM" "$PW" --force --yes
+  assert_eq "worktreeinclude(existing): --force does not overwrite" ".env" "$(cat "$PW/.worktreeinclude")"
+  assert_no_file "worktreeinclude(existing): no .dev_settings.new" "$PW/.worktreeinclude.dev_settings.new"
+fi
+
+echo "## (13c) --profile sandbox: 샌드박스 설정·규칙을 더한다(auto 는 고르지 않는다)"
+if need "sandbox: profile" profiles/sandbox/settings.fragment.json profiles/sandbox/rules/sandbox.md "$PT/dot-claude/settings.json"; then
+  SBX="$REPO/profiles/sandbox/settings.fragment.json"
+  assert_no_file "sandbox: not applied by --profile auto/django" "$P/.claude/rules/sandbox.md"
+  assert_eq "sandbox: no sandbox key without the profile" False "$(jq_py "$P/.claude/settings.json" '"sandbox" in d')"
+  assert_eq "sandbox: fragment keeps the approval flow (no auto-allow)" True "$(jq_py "$SBX" 'd["sandbox"]["enabled"] is True and d["sandbox"]["autoAllowBashIfSandboxed"] is False')"
+  assert_eq "sandbox: fragment does not widen the boundary" True "$(jq_py "$SBX" 'not any(k in d["sandbox"] for k in ("excludedCommands", "ignoreViolations", "enableWeakerNetworkIsolation", "enableWeakerNestedSandbox", "network")) and sorted(d["sandbox"]["filesystem"]) == ["denyRead"]')"
+  assert_eq "sandbox: fragment denyRead uses literal home paths only" True "$(jq_py "$SBX" 'all(p.startswith("~/") and "*" not in p for p in d["sandbox"]["filesystem"]["denyRead"])')"
+  new_proj sbx; PS="$NEW_PROJ"
+  run_apply "$HM" "$PS" --profile sandbox
+  assert_apply_ok "sandbox: exit 0"
+  assert_same "sandbox: rule copied" "$REPO/profiles/sandbox/rules/sandbox.md" "$PS/.claude/rules/sandbox.md"
+  assert_eq "sandbox: settings carry the fragment's sandbox block" True "$(jq_py "$PS/.claude/settings.json" "d['sandbox'] == json.load(open('$SBX', encoding='utf-8'))['sandbox']")"
+  assert_eq "sandbox: unsandboxed retry asks" True "$(jq_py "$PS/.claude/settings.json" '"Bash(dangerouslyDisableSandbox:true)" in d["permissions"]["ask"]')"
+  assert_not_contains "sandbox: no validate WARN/FAIL for the sandbox keys" "$OUT" "스키마 스냅샷에 없는 키"
+  run_apply "$HM" "$PS" --profile sandbox
+  assert_matches "sandbox(rerun): settings unchanged" "$OUT" '변경 없음 +\.claude/settings\.json'
+  # 이미 있는 값은 유지하고 없는 키만 더한다(다른 프로필 조각과 같은 병합 규칙)
+  new_proj sbx2; PS2="$NEW_PROJ"; mkdir -p "$PS2/.claude"
+  printf '{"sandbox":{"enabled":false,"excludedCommands":["docker"]}}\n' > "$PS2/.claude/settings.json"
+  run_apply "$HM" "$PS2" --profile sandbox,python
+  assert_eq "sandbox(existing): user's values kept" True "$(jq_py "$PS2/.claude/settings.json" 'd["sandbox"]["enabled"] is False and d["sandbox"]["excludedCommands"] == ["docker"]')"
+  assert_eq "sandbox(existing): missing keys added" True "$(jq_py "$PS2/.claude/settings.json" '"~/.ssh" in d["sandbox"]["filesystem"]["denyRead"]')"
+  assert_file "sandbox: combines with a language profile" "$PS2/.claude/rules/python.md"
+fi
+
 echo "## (14) 거부: \$HOME, \$HOME/.claude/x, 저장소 자체, 없는 디렉터리, 잘못된 프로필"
 run_apply "$HM" "$HM"; assert_eq "refuse: HOME → exit 1" 1 "$RC"
 mkdir -p "$HM/.claude/x"; run_apply "$HM" "$HM/.claude/x"; assert_eq "refuse: HOME/.claude/x → exit 1" 1 "$RC"

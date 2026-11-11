@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# dev_settings — 프로젝트에 Claude Code 하네스 템플릿 적용(CLAUDE.md, .claude/settings.json, rules, gitignore).
-# 사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
-#   언어 프로필은 선택형 add-on: --profile 을 생략하면 적용하지 않는다(auto 는 detect-stack.sh 감지 결과로 고른다).
+# dev_settings — 프로젝트에 Claude Code 하네스 템플릿 적용(CLAUDE.md, .claude/settings.json, rules, gitignore, .worktreeinclude).
+# 사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|sandbox|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
+#   프로필은 선택형 add-on: --profile 을 생략하면 적용하지 않는다(auto 는 detect-stack.sh 감지 결과로 언어 프로필만 고른다).
 # 종료 코드: 0 성공 · 1 거부/실패(롤백 없음 — 바뀐 파일만 백업) · 2 사용법 오류 · 3 적용됐지만 validate FAIL. bash 3.2 호환.
 
 REPO_DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P) || exit 1
@@ -10,12 +10,13 @@ REPO_DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P) || exit 1
 
 usage() {
   cat <<'EOF'
-사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
+사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|sandbox|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
 
   --profile <p>       언어 프로필(선택형 add-on, 반복 가능, 쉼표 구분 가능, --profile=<p> 도 가능).
                       생략하면 언어 프로필 없이 공통 템플릿만 적용한다(감지된 스택이 있으면 --profile auto 가
                       고를 프로필을 안내만 한다). auto = hooks/lib/detect-stack.sh 로 감지해 고른다.
                       django/fastapi 는 python 을 함께 적용한다.
+                      sandbox = Bash 명령을 OS 샌드박스 안에서 실행하는 설정과 규칙(언어와 무관, auto 가 고르지 않는다).
   --with-format-hook  PostToolUse 포맷 훅과 .claude/hooks/ 복사. 프로젝트에 포매터 설정이 있으면 권장.
                       ECC quality-gate 는 기본적으로 검사만 하므로 겹치지 않는다; ECC_QUALITY_GATE_FIX=true 일 때만
                       ECC 가 고치는 파일 타입을 건너뛴다. 플래그 없이 다시 적용하면 훅 등록을 떼고 복사한 훅 파일을
@@ -96,7 +97,7 @@ for p in "$@"; do
   case $p in
     "") ;;
     auto) detect_profiles ;;
-    python|node) add_profile "$p" ;;
+    python|node|sandbox) add_profile "$p" ;;
     django|fastapi) add_profile python; add_profile "$p" ;;
     *) printf '알 수 없는 프로필: %s\n\n' "$p" >&2; usage; exit 2 ;;
   esac
@@ -139,6 +140,7 @@ for p in ${PROFILES[@]+"${PROFILES[@]}"}; do
   done
 done
 if [ "$OPT_TEAM" = 1 ]; then apply_sync "$REPO_DIR/claude/global/rules/git.md" ".claude/rules/git.md" 644; fi
+apply_seed "$REPO_DIR/claude/project-template/dot-worktreeinclude" ".worktreeinclude" 644
 HOOKS_ORPHAN=0
 if [ "$OPT_FMT" = 1 ]; then
   for f in run-hook.sh format-on-edit.sh lib/common.sh; do
@@ -156,7 +158,7 @@ log "── 요약 ──"
 info "생성 $N_CREATE · 갱신 $N_UPDATE · 유지 $N_KEEP · 삭제 $N_REMOVE · 변경 없음 $N_SAME · 경고 $N_WARN"
 [ -n "${BK_DIR:-}" ] && [ -d "$BK_DIR" ] && info "백업: $BK_DIR"
 log "── 커밋할 파일 ──"
-for f in CLAUDE.md .gitignore .claude/settings.json; do [ -f "$TARGET/$f" ] && info "$f"; done
+for f in CLAUDE.md .gitignore .worktreeinclude .claude/settings.json; do [ -f "$TARGET/$f" ] && info "$f"; done
 [ -d "$TARGET/.claude/rules" ] && info ".claude/rules/*.md"
 if [ -d "$TARGET/.claude/hooks" ]; then
   # 참조되지 않는(수정된) 훅 파일만 남은 경우는 커밋 목록에서 뺀다.
