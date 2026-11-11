@@ -1,4 +1,4 @@
-# dev_settings — 저장소 작업 가이드
+# ai_boilerplate — 저장소 작업 가이드
 
 Claude Code 보일러플레이트 저장소다. 언어·프레임워크 무관한 전역 하네스와 프로젝트 템플릿이 핵심이고, 언어 프로필은 `apply.sh --profile <이름>|auto`를 줄 때만 적용하는 선택형 add-on이다(생략하면 적용하지 않는다).
 

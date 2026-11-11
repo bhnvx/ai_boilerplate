@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
-# dev_settings — install/apply 테스트 공용 헬퍼 (bash 3.2). 소스하는 쪽이 REPO 를 쓸 수 있다.
-# 환경: DEV_SETTINGS_TEST_REPO=<dir> 로 다른 저장소 사본을 대상으로 실행 가능(기본: 이 저장소).
+# ai_boilerplate — install/apply 테스트 공용 헬퍼 (bash 3.2). 소스하는 쪽이 REPO 를 쓸 수 있다.
+# 환경: AI_BOILERPLATE_TEST_REPO=<dir> 로 다른 저장소 사본을 대상으로 실행 가능(기본: 이 저장소).
 #       KEEP_TMP=1 이면 임시 디렉터리를 남긴다.
 
 HELPERS_DIR=$(cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
-REPO=${DEV_SETTINGS_TEST_REPO:-$(cd -P -- "$HELPERS_DIR/../.." && pwd -P)}
+REPO=${AI_BOILERPLATE_TEST_REPO:-$(cd -P -- "$HELPERS_DIR/../.." && pwd -P)}
 T_PASS=0; T_FAIL=0; T_SKIP=0
-TROOT=$(mktemp -d "${TMPDIR:-/tmp}/dev_settings test.XXXXXX") || { echo "임시 디렉터리 생성 실패" >&2; exit 1; }
+TROOT=$(mktemp -d "${TMPDIR:-/tmp}/ai_boilerplate test.XXXXXX") || { echo "임시 디렉터리 생성 실패" >&2; exit 1; }
 OUT="$TROOT/out.txt"; RC=0; HOME_N=0
-export DEV_SETTINGS_IN_TESTS=1
+export AI_BOILERPLATE_IN_TESTS=1
 cleanup() { [ "${KEEP_TMP:-0}" = 1 ] || rm -rf -- "$TROOT"; }
 trap cleanup EXIT
 

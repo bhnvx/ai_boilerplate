@@ -1,5 +1,5 @@
 {
-  "name": "dev-settings",
+  "name": "ai-boilerplate",
   "description": "비밀 파일·위험 명령·마이그레이션 가드 훅, 완료 검증·위임 범위 알림 훅, explorer·implementer·reviewer 에이전트, 작업 스킬 7개",
   "author": { "name": "bhnvx" },
   "repository": "https://github.com/bhnvx/ai_boilerplate",

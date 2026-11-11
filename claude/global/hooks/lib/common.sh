@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# lib/common.sh — dev_settings 훅 공통 함수 (bash 3.2 호환; set -u / set -e 사용 금지)
+# lib/common.sh — ai_boilerplate 훅 공통 함수 (bash 3.2 호환; set -u / set -e 사용 금지)
 # 사용법: . "$(cd -P -- "$(dirname -- "$0")" && pwd -P)/lib/common.sh"
 # 원칙: 결정은 오직 stdout JSON + exit 0. 파서(jq/python3)가 없으면 조용히 통과(fail-open).
 # 전역: HOOK_INPUT(stdin 전체), HOOK_JSON_TOOL(jq|python3|빈값), HOOK_NAME($0 의 basename, .sh 제거)

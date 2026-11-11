@@ -28,7 +28,7 @@ cwd=$(hook_abspath "$cwd" "$PWD")
 sc_lines=()
 sc_add() { sc_lines[${#sc_lines[@]}]=$1; }
 
-sc_add "[세션 컨텍스트 · dev_settings 훅]"
+sc_add "[세션 컨텍스트 · ai_boilerplate 훅]"
 sc_date=$(LC_ALL=C date '+%Y-%m-%d (%a)' 2>/dev/null)
 if [ -n "$H_SOURCE" ]; then sc_add "날짜: $sc_date · 소스: $H_SOURCE"; else sc_add "날짜: $sc_date"; fi
 

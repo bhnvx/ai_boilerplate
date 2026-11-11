@@ -1,6 +1,6 @@
 ---
 name: harness-init
-description: 현재 프로젝트에 dev_settings 프로젝트 템플릿(CLAUDE.md, .claude/settings.json, rules, 선택형 언어 프로필)을 apply.sh로 적용한다. 스택을 감지해 프로필을 제안하고, 실행 전 명령을 보여주고 확인받는다.
+description: 현재 프로젝트에 ai_boilerplate 프로젝트 템플릿(CLAUDE.md, .claude/settings.json, rules, 선택형 언어 프로필)을 apply.sh로 적용한다. 스택을 감지해 프로필을 제안하고, 실행 전 명령을 보여주고 확인받는다.
 argument-hint: "[python|django|fastapi|node|auto] [--force] [--with-format-hook] [--team] [--dry-run]"
 disable-model-invocation: true
 allowed-tools:
@@ -19,10 +19,10 @@ allowed-tools:
 ## 절차
 
 1. 저장소 확인
-   - "dev_settings 저장소"가 `미설치`·`경로 없음`이거나 `apply.sh: 없음`이면 멈춘다.
-   - 안내: dev_settings 저장소에서 `./install.sh`를 실행하고 Claude Code를 재시작한 뒤 다시 `/harness-init`.
+   - "ai_boilerplate 저장소"가 `미설치`·`경로 없음`이거나 `apply.sh: 없음`이면 멈춘다.
+   - 안내: ai_boilerplate 저장소에서 `./install.sh`를 실행하고 Claude Code를 재시작한 뒤 다시 `/harness-init`.
 2. 기존 파일 확인(위 "프로젝트 파일 현황")
-   - `CLAUDE.md` 또는 `.claude/CLAUDE.md`가 있으면 apply.sh는 새로 만들지 않는다. 내용이 다르면 그 파일 옆에 후보(`CLAUDE.md.dev_settings.new` 또는 `.claude/CLAUDE.md.dev_settings.new`)를 만든다. `--force`는 백업 후 루트 `CLAUDE.md`를 덮어쓰므로 사용자가 원할 때만 붙인다. `.claude/CLAUDE.md`만 있으면 `--force`로도 루트 `CLAUDE.md`를 만들지 않는다.
+   - `CLAUDE.md` 또는 `.claude/CLAUDE.md`가 있으면 apply.sh는 새로 만들지 않는다. 내용이 다르면 그 파일 옆에 후보(`CLAUDE.md.ai_boilerplate.new` 또는 `.claude/CLAUDE.md.ai_boilerplate.new`)를 만든다. `--force`는 백업 후 루트 `CLAUDE.md`를 덮어쓰므로 사용자가 원할 때만 붙인다. `.claude/CLAUDE.md`만 있으면 `--force`로도 루트 `CLAUDE.md`를 만들지 않는다.
    - `AGENTS.md`만 있으면 첫 줄이 `@AGENTS.md`인 `CLAUDE.md`가 만들어진다(AGENTS.md는 계속 로드됨).
    - `.claude/settings.json`이 있으면 덮어쓰지 않고 병합된다.
    - git 저장소가 아니거나 미커밋 변경이 많으면 그 사실을 먼저 알린다.
@@ -55,10 +55,10 @@ allowed-tools:
      - 2: 오류 원문(확인 필요 작업이면 `--yes` 안내 포함)을 보여주고 인수를 고친 명령을 다시 확인받는다.
      - 3: 사용자에게 `/harness-check` 실행을 제안한다.
 6. 결과 요약
-   - 생성 / 건너뜀(이미 있음) / `.dev_settings.new` 생성 / 백업 경로.
+   - 생성 / 건너뜀(이미 있음) / `.ai_boilerplate.new` 생성 / 백업 경로.
    - 커밋할 파일: `CLAUDE.md`, `.gitignore`, `.worktreeinclude`, `.claude/settings.json`, `.claude/rules/**`, `.claude/hooks/**`(포맷 훅을 넣은 경우).
    - 선택: 팀원용 예시(커밋 가능): `CLAUDE.local.md.example`, `.claude/settings.local.json.example`.
-   - 커밋하지 않을 파일: `CLAUDE.local.md`, `.claude/settings.local.json`, `*.dev_settings.new` (`.gitignore`에 추가됨).
+   - 커밋하지 않을 파일: `CLAUDE.local.md`, `.claude/settings.local.json`, `*.ai_boilerplate.new` (`.gitignore`에 추가됨).
    - apply.sh가 출력한 TODO 목록(CLAUDE.md TODO 채우기, allow 목록 검토)을 그대로 전달한다.
 7. TODO 채우기 제안
    - `CLAUDE.md`의 TODO(기술 스택, 명령어, 디렉터리 구조, 컨벤션, 중요 파일)를 프로젝트를 읽고 채워줄지 묻는다.

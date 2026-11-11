@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — apply.sh 테스트: 프로필(생략/auto/명시), CLAUDE.md 생성·AGENTS.md·.claude/CLAUDE.md, settings 병합,
+# ai_boilerplate — apply.sh 테스트: 프로필(생략/auto/명시), CLAUDE.md 생성·AGENTS.md·.claude/CLAUDE.md, settings 병합,
 # gitignore 1회 추가, 포맷 훅 opt-in, --team, --dry-run, 거부 목록. 모든 경로에 공백 포함.
 . "$(cd -P -- "$(dirname -- "$0")" && pwd -P)/helpers.sh"
 
@@ -125,20 +125,20 @@ if need "agents-md: template" "$PT/CLAUDE.md.tmpl"; then
   assert_eq "dot-claude-md: exit 0" 0 "$RC"
   assert_no_file "dot-claude-md: no new CLAUDE.md" "$PD/CLAUDE.md"
   assert_eq "dot-claude-md: existing file untouched" "# existing" "$(cat "$PD/.claude/CLAUDE.md")"
-  assert_file "dot-claude-md: template offered as .dev_settings.new" "$PD/.claude/CLAUDE.md.dev_settings.new"
+  assert_file "dot-claude-md: template offered as .ai_boilerplate.new" "$PD/.claude/CLAUDE.md.ai_boilerplate.new"
   run_apply "$HM" "$PD" --profile python --force --yes
   assert_eq "dot-claude-md --force: exit 0" 0 "$RC"
   assert_no_file "dot-claude-md --force: still no root CLAUDE.md" "$PD/CLAUDE.md"
   assert_eq "dot-claude-md --force: existing file untouched" "# existing" "$(cat "$PD/.claude/CLAUDE.md")"
   assert_contains "dot-claude-md --force: WARN explains it" "$OUT" ".claude/CLAUDE.md 가 있어 --force 로도 CLAUDE.md 를 새로 만들지 않는다"
-  assert_file "dot-claude-md --force: candidate stays next to .claude/CLAUDE.md" "$PD/.claude/CLAUDE.md.dev_settings.new"
+  assert_file "dot-claude-md --force: candidate stays next to .claude/CLAUDE.md" "$PD/.claude/CLAUDE.md.ai_boilerplate.new"
   new_proj existing; PE="$NEW_PROJ"; printf '# mine\n' > "$PE/CLAUDE.md"
   run_apply "$HM" "$PE" --profile python
   assert_eq "existing-md: kept" "# mine" "$(cat "$PE/CLAUDE.md")"
-  assert_file "existing-md: .dev_settings.new beside it" "$PE/CLAUDE.md.dev_settings.new"
+  assert_file "existing-md: .ai_boilerplate.new beside it" "$PE/CLAUDE.md.ai_boilerplate.new"
   run_apply "$HM" "$PE" --profile python --force --yes
   assert_not_contains "existing-md: --force overwrote" "$PE/CLAUDE.md" "# mine"
-  assert_eq "existing-md: --force made a backup" True "$( [ -n "$(ls -d "$HM/.claude/backups/dev_settings/apply/existing dir"/* 2>/dev/null)" ] && echo True || echo False)"
+  assert_eq "existing-md: --force made a backup" True "$( [ -n "$(ls -d "$HM/.claude/backups/ai_boilerplate/apply/existing dir"/* 2>/dev/null)" ] && echo True || echo False)"
 fi
 
 echo "## (13b) .worktreeinclude: 없으면 생성, 있으면 --force 로도 유지"
@@ -157,7 +157,7 @@ if need "worktreeinclude: template" "$PT/dot-worktreeinclude" "$PT/gitignore.cla
   assert_contains "worktreeinclude: listed as a file to commit" "$OUT" "  .worktreeinclude"
   run_apply "$HM" "$PW" --force --yes
   assert_eq "worktreeinclude(existing): --force does not overwrite" ".env" "$(cat "$PW/.worktreeinclude")"
-  assert_no_file "worktreeinclude(existing): no .dev_settings.new" "$PW/.worktreeinclude.dev_settings.new"
+  assert_no_file "worktreeinclude(existing): no .ai_boilerplate.new" "$PW/.worktreeinclude.ai_boilerplate.new"
 fi
 
 echo "## (13c) --profile sandbox: 샌드박스 설정·규칙을 더한다(auto 는 고르지 않는다)"

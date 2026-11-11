@@ -131,7 +131,7 @@
 
 ECC(everything-claude-code)를 전역으로 켠 PC를 기준으로, 기능이 겹치지 않게 나눴다. 플러그인 훅과 settings 훅은 순서 없이 병렬로 실행된다.
 
-| 영역 | ECC | dev_settings |
+| 영역 | ECC | ai_boilerplate |
 |---|---|---|
 | 사실 확인 게이트 | GateGuard | — |
 | `--no-verify` 차단 | 있음 | `guard-destructive`(ECC 없는 PC용 대비책) |

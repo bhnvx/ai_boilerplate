@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — install.sh 계획 단계: 대상 열거, 이전 매니페스트 로드, 파일별 동작 계산.
+# ai_boilerplate — install.sh 계획 단계: 대상 열거, 이전 매니페스트 로드, 파일별 동작 계산.
 # 전제: REPO_DIR, CLAUDE_DIR, OPT_FORCE, OPT_NO_SETTINGS, STAGE, HOME_DIR 설정, install-common.sh 로드.
 
 T_SRC=(); T_REL=(); T_MODE=(); T_ACTION=()      # 대상 파일(소스 절대 경로 / CLAUDE_DIR 상대 경로 / 모드 / 동작)
@@ -9,7 +9,7 @@ SETTINGS_ACTION="skip"; SETTINGS_BASE_CK=""; SETTINGS_DIFF=""
 
 add_target() {  # <src-abs> <rel> <mode>
   [ -f "$1" ] || return 0
-  case ${1##*/} in .DS_Store|*.dev_settings.new|.gitkeep) return 0 ;; esac
+  case ${1##*/} in .DS_Store|*.ai_boilerplate.new|.gitkeep) return 0 ;; esac
   T_SRC[${#T_SRC[@]}]="$1"; T_REL[${#T_REL[@]}]="$2"; T_MODE[${#T_MODE[@]}]="$3"
 }
 
@@ -183,7 +183,7 @@ print_plan() {
   while [ "$i" -lt "$n" ]; do
     act="${T_ACTION[$i]}"; count_action "$act"
     case $act in
-      keep-user-edited|conflict) info "$(label_of "$act")  ${T_REL[$i]}  → ${T_REL[$i]}.dev_settings.new" ;;
+      keep-user-edited|conflict) info "$(label_of "$act")  ${T_REL[$i]}  → ${T_REL[$i]}.ai_boilerplate.new" ;;
       keep-user-deleted) info "$(label_of "$act")  ${T_REL[$i]}  (--force 로 복원)" ;;
       *) info "$(label_of "$act")  ${T_REL[$i]}" ;;
     esac

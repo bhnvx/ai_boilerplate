@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — 프로젝트에 Claude Code 하네스 템플릿 적용(CLAUDE.md, .claude/settings.json, rules, gitignore, .worktreeinclude).
+# ai_boilerplate — 프로젝트에 Claude Code 하네스 템플릿 적용(CLAUDE.md, .claude/settings.json, rules, gitignore, .worktreeinclude).
 # 사용법: ./apply.sh <project-dir> [--profile python|django|fastapi|node|sandbox|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
 #   프로필은 선택형 add-on: --profile 을 생략하면 적용하지 않는다(auto 는 detect-stack.sh 감지 결과로 언어 프로필만 고른다).
 # 종료 코드: 0 성공 · 1 거부/실패(롤백 없음 — 바뀐 파일만 백업) · 2 사용법 오류 · 3 적용됐지만 validate FAIL. bash 3.2 호환.
@@ -27,7 +27,7 @@ usage() {
   --team              전역 git.md 를 .claude/rules/git.md 로 함께 복사(팀 컨벤션 동봉)
   -h, --help          이 도움말
 
-종료 코드: 0 성공 · 1 거부/실패(롤백 없음 — 바뀐 파일만 ~/.claude/backups/dev_settings/apply/ 에 백업) · 2 사용법 오류
+종료 코드: 0 성공 · 1 거부/실패(롤백 없음 — 바뀐 파일만 ~/.claude/backups/ai_boilerplate/apply/ 에 백업) · 2 사용법 오류
           · 3 적용됐지만 validate FAIL
 EOF
 }
@@ -59,7 +59,7 @@ HOME_ABS=$(abs_dir "$HOME" 2>/dev/null || printf '%s' "$HOME")
 # ~/.claude 가 심볼릭 링크면 실제 위치도 거부한다(TARGET 은 이미 링크가 풀린 경로).
 CLAUDE_HOME="$HOME_ABS/.claude"; CLAUDE_HOME_REAL=$(abs_dir "$CLAUDE_HOME") || CLAUDE_HOME_REAL="$CLAUDE_HOME"
 { is_under "$TARGET" "$CLAUDE_HOME" || is_under "$TARGET" "$CLAUDE_HOME_REAL"; } && die "거부: ~/.claude 아래에는 적용하지 않는다 ($TARGET)"
-[ "$TARGET" = "$REPO_DIR" ] && die "거부: dev_settings 저장소 자체에는 적용하지 않는다 ($TARGET)"
+[ "$TARGET" = "$REPO_DIR" ] && die "거부: ai_boilerplate 저장소 자체에는 적용하지 않는다 ($TARGET)"
 [ -d "$REPO_DIR/claude/project-template" ] || die "claude/project-template/ 이 없다"
 # --force 는 확인이 필요한 작업: 대화형이면 묻고, 비대화형이면 --yes 가 있어야 한다(install.sh 와 같은 규칙).
 if [ "$OPT_FORCE" = 1 ] && [ "$OPT_DRY" != 1 ] && [ "$OPT_YES" != 1 ]; then
@@ -67,7 +67,7 @@ if [ "$OPT_FORCE" = 1 ] && [ "$OPT_DRY" != 1 ] && [ "$OPT_YES" != 1 ]; then
   printf '기존 CLAUDE.md·규칙 파일을 백업 후 덮어쓴다(--force). 진행할까? [y/N] '
   read -r ans; case $ans in y|Y|yes|YES) ;; *) die "중단" 1 ;; esac
 fi
-BK_PARENT="$HOME_ABS/.claude/backups/dev_settings/apply/${TARGET##*/}"
+BK_PARENT="$HOME_ABS/.claude/backups/ai_boilerplate/apply/${TARGET##*/}"
 
 # 프로필 결정 ------------------------------------------------------------------
 PROFILES=()
@@ -120,9 +120,9 @@ if [ -z "$PROFILES_ARG" ]; then
 fi
 
 # 실행 ------------------------------------------------------------------------
-WORK=$(mktemp -d "${TMPDIR:-/tmp}/dev_settings.apply.XXXXXX") || die "임시 디렉터리 생성 실패"
+WORK=$(mktemp -d "${TMPDIR:-/tmp}/ai_boilerplate.apply.XXXXXX") || die "임시 디렉터리 생성 실패"
 trap 'rm -rf -- "$WORK"' EXIT
-log "dev_settings 적용 — 프로젝트: $TARGET$( [ "$OPT_DRY" = 1 ] && printf ' (dry-run: 쓰지 않음)')"
+log "ai_boilerplate 적용 — 프로젝트: $TARGET$( [ "$OPT_DRY" = 1 ] && printf ' (dry-run: 쓰지 않음)')"
 [ -n "$DETECTED" ] && log "감지된 스택: $DETECTED"
 PLIST="${PROFILES[*]+"${PROFILES[*]}"}"; [ -n "$PLIST" ] || PLIST="(없음)"
 [ -z "$PROFILES_ARG" ] && PLIST="(없음) — --profile 을 지정하지 않아 언어 프로필을 적용하지 않는다"
@@ -165,7 +165,7 @@ if [ -d "$TARGET/.claude/hooks" ]; then
   if [ "$HOOKS_ORPHAN" = 0 ] || grep -qF -- '.claude/hooks/' "$TARGET/.claude/settings.json" 2>/dev/null; then info ".claude/hooks/**"; fi
 fi
 log "── 커밋하지 않을 파일(gitignore.claude 가 제외) ──"
-info "CLAUDE.local.md · .claude/settings.local.json · *.dev_settings.new"
+info "CLAUDE.local.md · .claude/settings.local.json · *.ai_boilerplate.new"
 log "── 선택: 팀원용 예시(커밋 가능) ──"
 info "CLAUDE.local.md.example · .claude/settings.local.json.example"
 log "── TODO ──"

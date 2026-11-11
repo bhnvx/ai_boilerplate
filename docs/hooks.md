@@ -210,7 +210,7 @@
 
 - 선언 형식은 `/delegate` 템플릿 그대로다: `소유 파일(수정 허용) src/api/views.py, tests/test_views.py / 수정 금지 …`. 다음 줄부터의 목록(`- src/a.py`)과 `owned files:`도 읽는다.
 - 항목은 파일, 디렉터리(아래 전부), 글롭(`tests/*.py`)이다. 공백이 든 경로는 백틱으로 감싼다. `없음`이면 모든 수정이 범위 밖이다.
-- 선언이 없으면 검사하지 않는다. `implementer`(플러그인으로 설치한 `dev-settings:implementer` 포함)가 선언 없이 파일을 고쳤을 때만 `[subagent:no-scope]`로 알린다.
+- 선언이 없으면 검사하지 않는다. `implementer`(플러그인으로 설치한 `ai-boilerplate:implementer` 포함)가 선언 없이 파일을 고쳤을 때만 `[subagent:no-scope]`로 알린다.
 - 세션 작업 디렉터리 밖의 임시 디렉터리 파일은 세지 않는다.
 - 에이전트 memory 디렉터리(`.claude/agent-memory/`·`.claude/agent-memory-local/`, 홈의 `~/.claude/agent-memory/` 포함)의 파일도 세지 않는다. `memory`를 켠 에이전트가 자기 기록을 쓰는 곳이다([components.md](components.md) 2.1절).
 - 기본은 사용자에게 경고만 한다. 예: `소유 파일 밖 수정 [subagent:out-of-scope]: implementer가 … 수정했다: src/settings.py (소유 파일: src/api/views.py)`.

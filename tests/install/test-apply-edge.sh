@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — apply.sh 테스트 2부(경계): CLAUDE.md→AGENTS.md 심볼릭 링크 + --force · AGENTS.md 재적용 멱등성 ·
+# ai_boilerplate — apply.sh 테스트 2부(경계): CLAUDE.md→AGENTS.md 심볼릭 링크 + --force · AGENTS.md 재적용 멱등성 ·
 # 심볼릭 링크 .claude/settings.json · CRLF .gitignore · 포맷 훅 해제 시 훅 파일 정리 · `&`/`$` 가 든 프로젝트명 ·
 # 심볼릭 링크 ~/.claude 거부 · 도움말·요약 문구.
 . "$(cd -P -- "$(dirname -- "$0")" && pwd -P)/helpers.sh"
@@ -26,18 +26,18 @@ if need "symlink: template" "$PT/CLAUDE.md.tmpl"; then
   assert_eq "symlink: CLAUDE.md imports AGENTS.md" "@AGENTS.md" "$(first_line "$P/CLAUDE.md")"
   assert_contains "symlink: AGENTS.md content preserved" "$P/AGENTS.md" "team instructions here"
   assert_eq "symlink: AGENTS.md still 2 lines" 2 "$(count_lines "$P/AGENTS.md")"
-  BK=""; for d in "$HM/.claude/backups/dev_settings/apply/symlink dir"/*/; do [ -f "${d}CLAUDE.md" ] && BK="${d%/}"; done
+  BK=""; for d in "$HM/.claude/backups/ai_boilerplate/apply/symlink dir"/*/; do [ -f "${d}CLAUDE.md" ] && BK="${d%/}"; done
   assert_contains "symlink: link target content backed up as CLAUDE.md" "$BK/CLAUDE.md" "team instructions here"
 fi
 
-echo "## (A2) AGENTS.md 만 있는 프로젝트: 재적용은 변경 없음(.dev_settings.new 없음), --force 도 @AGENTS.md 유지"
+echo "## (A2) AGENTS.md 만 있는 프로젝트: 재적용은 변경 없음(.ai_boilerplate.new 없음), --force 도 @AGENTS.md 유지"
 if need "agents idem: template" "$PT/CLAUDE.md.tmpl"; then
   new_proj agents2; PA="$NEW_PROJ"; printf '# agents\n' > "$PA/AGENTS.md"
   run_apply "$HM" "$PA" --profile python; assert_eq "agents idem: first apply exit 0" 0 "$RC"
   run_apply "$HM" "$PA" --profile python; assert_eq "agents idem: second apply exit 0" 0 "$RC"
   assert_matches "agents idem: second run prints 변경 없음 CLAUDE.md" "$OUT" '변경 없음 +CLAUDE\.md$'
   assert_not_contains "agents idem: no WARN 유지" "$OUT" "WARN 유지: CLAUDE.md"
-  assert_no_file "agents idem: no .dev_settings.new" "$PA/CLAUDE.md.dev_settings.new"
+  assert_no_file "agents idem: no .ai_boilerplate.new" "$PA/CLAUDE.md.ai_boilerplate.new"
   assert_contains "agents idem: import notice still printed" "$OUT" "AGENTS.md는 @import로 계속 로드됨"
   run_apply "$HM" "$PA" --profile python --force --yes; assert_eq "agents idem: --force exit 0" 0 "$RC"
   assert_eq "agents idem: --force keeps @AGENTS.md" "@AGENTS.md" "$(first_line "$PA/CLAUDE.md")"
@@ -99,7 +99,7 @@ if need "prune: hook sources" claude/global/hooks/run-hook.sh claude/global/hook
   assert_eq "prune: PostToolUse handler gone" 0 "$(hook_commands "$PP/.claude/settings.json" | grep -c format-on-edit)"
   assert_contains "prune: summary counts 삭제 3" "$OUT" "삭제 3"
   assert_not_contains "prune: commit list has no .claude/hooks" "$OUT" ".claude/hooks/**"
-  BKP=""; for d in "$HM/.claude/backups/dev_settings/apply/prune dir"/*/; do [ -f "${d}.claude/hooks/format-on-edit.sh" ] && BKP="${d%/}"; done
+  BKP=""; for d in "$HM/.claude/backups/ai_boilerplate/apply/prune dir"/*/; do [ -f "${d}.claude/hooks/format-on-edit.sh" ] && BKP="${d%/}"; done
   assert_eq "prune: removed hooks were backed up" True "$([ -n "$BKP" ] && echo True || echo False)"
   run_apply "$HM" "$PP" --profile python --with-format-hook; assert_apply_ok "prune(mod): re-enable exit"
   printf '\n# local tweak\n' >> "$PP/.claude/hooks/format-on-edit.sh"

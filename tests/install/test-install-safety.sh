@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — install.sh 테스트 4부(안전성): 읽기 전용 settings.json · 롤백(복구 실패 시 백업 보존, 빈 디렉터리 정리) ·
+# ai_boilerplate — install.sh 테스트 4부(안전성): 읽기 전용 settings.json · 롤백(복구 실패 시 백업 보존, 빈 디렉터리 정리) ·
 # 백업 디렉터리 이름 · place_file/atomic_replace 원자성과 심볼릭 링크 · 도움말의 종료 코드 · dotfiles 링크 CLAUDE.md --force.
 . "$(cd -P -- "$(dirname -- "$0")" && pwd -P)/helpers.sh"
 
@@ -19,26 +19,26 @@ assert_eq "readonly: user key kept" fable "$(jq_py "$CR/settings.json" 'd["model
 # 설정이 바뀐 뒤 실패(매니페스트 단계) → 롤백이 읽기 전용 파일도 되돌린다(cp 실패 시 임시 파일 + mv)
 new_home; HR2="$NEW_HOME"; CR2="$HR2/.claude"; mkdir -p "$CR2"
 cp "$TROOT/ro.seed" "$CR2/settings.json"; chmod 444 "$CR2/settings.json"
-DEV_SETTINGS_FAIL_AT=manifest run_install "$HR2"
+AI_BOILERPLATE_FAIL_AT=manifest run_install "$HR2"
 assert_eq "readonly rollback: exit 1" 1 "$RC"
 assert_contains "readonly rollback: settings restored" "$OUT" "복구  settings.json"
 assert_contains "readonly rollback: complete" "$OUT" "롤백 완료"
 assert_same "readonly rollback: settings.json content back to the seed" "$TROOT/ro.seed" "$CR2/settings.json"
 [ "$ROOT_USER" = 1 ] || assert_eq "readonly rollback: still read-only" False "$(is_writable "$CR2/settings.json")"
-assert_eq "readonly rollback: backup dir removed after a full restore" "" "$(ls -d "$CR2"/backups/dev_settings/[0-9]* 2>/dev/null)"
+assert_eq "readonly rollback: backup dir removed after a full restore" "" "$(ls -d "$CR2"/backups/ai_boilerplate/[0-9]* 2>/dev/null)"
 assert_no_file "readonly rollback: placed files removed" "$CR2/hooks"
 
-echo "## (S2) 롤백 중 복구 실패 → 백업 보존 + --restore 안내 (DEV_SETTINGS_FAIL_AT=manifest,restore)"
+echo "## (S2) 롤백 중 복구 실패 → 백업 보존 + --restore 안내 (AI_BOILERPLATE_FAIL_AT=manifest,restore)"
 new_home; HF="$NEW_HOME"; CF="$HF/.claude"; mkdir -p "$CF"
 printf '{\n  "model": "fable"\n}\n' > "$CF/settings.json"; cp "$CF/settings.json" "$TROOT/rf.seed"
-DEV_SETTINGS_FAIL_AT=manifest,restore run_install "$HF"
+AI_BOILERPLATE_FAIL_AT=manifest,restore run_install "$HF"
 assert_eq "restore-fail: exit 1" 1 "$RC"
 assert_contains "restore-fail: WARN 복구 실패" "$OUT" "복구 실패: settings.json"
 assert_contains "restore-fail: says partial rollback" "$OUT" "롤백 일부 실패"
 assert_contains "restore-fail: backup preserved notice" "$OUT" "백업 보존"
 assert_contains "restore-fail: prints a --restore hint" "$OUT" "--restore "
 assert_no_file "restore-fail: new files still removed" "$CF/hooks"
-BKF=$(ls -d "$CF"/backups/dev_settings/[0-9]* 2>/dev/null | tail -1)
+BKF=$(ls -d "$CF"/backups/ai_boilerplate/[0-9]* 2>/dev/null | tail -1)
 assert_eq "restore-fail: backup dir kept with settings.json" True "$( [ -n "$BKF" ] && [ -f "$BKF/settings.json" ] && echo True || echo False)"
 if [ -n "$BKF" ]; then
   assert_same "restore-fail: backup holds the original settings" "$TROOT/rf.seed" "$BKF/settings.json"
@@ -49,21 +49,21 @@ fi
 
 echo "## (S3) 빈 홈에서 롤백 → 새로 만든 빈 디렉터리(.claude 포함)도 남기지 않는다"
 new_home; HZ="$NEW_HOME"
-DEV_SETTINGS_FAIL_AT=place run_install "$HZ"
+AI_BOILERPLATE_FAIL_AT=place run_install "$HZ"
 assert_eq "fresh rollback(place): exit 1" 1 "$RC"
 assert_eq "fresh rollback(place): no directories left" 1 "$(find "$HZ" -type d | grep -c '')"
 new_home; HZ2="$NEW_HOME"
-DEV_SETTINGS_FAIL_AT=settings run_install "$HZ2"
+AI_BOILERPLATE_FAIL_AT=settings run_install "$HZ2"
 assert_eq "fresh rollback(settings): exit 1" 1 "$RC"
 assert_eq "fresh rollback(settings): no files left" 0 "$(find "$HZ2" -type f | grep -c '')"
 assert_eq "fresh rollback(settings): no directories left (rules/hooks/lib/skills/*)" 1 "$(find "$HZ2" -type d | grep -c '')"
 
 echo "## (S4) 백업 디렉터리 이름: YYYYmmdd-HHMMSS.XXXXXX (6자 접미사, POSIX mkdtemp)"
-REL=$(jq_py "$CR/dev_settings.manifest.json" "next((k for k in d['files'] if k.startswith('rules/')), '')")
+REL=$(jq_py "$CR/ai_boilerplate.manifest.json" "next((k for k in d['files'] if k.startswith('rules/')), '')")
 if [ -z "$REL" ]; then skip "backup name" "rules/*.md 없음"; else
   printf '\n- MARKER\n' >> "$CR/$REL"
   run_install "$HR" --force --yes; assert_install_ok "backup name: --force exit"
-  BKN=$(ls -d "$CR"/backups/dev_settings/[0-9]* 2>/dev/null | tail -1); BKN=${BKN##*/}
+  BKN=$(ls -d "$CR"/backups/ai_boilerplate/[0-9]* 2>/dev/null | tail -1); BKN=${BKN##*/}
   re='^[0-9]{8}-[0-9]{6}\.[A-Za-z0-9]{6}$'
   assert_eq "backup name: [$BKN] matches the template" True "$([[ $BKN =~ $re ]] && echo True || echo False)"
 fi
@@ -83,7 +83,7 @@ U="$TROOT/unit dir"; mkdir -p "$U"
   [ ! -L "$U/link" ] || exit 5
   [ "$(cat "$U/target")" = team ] || exit 6
   [ "$(cat "$U/link")" = new ] || exit 7
-  ls -d "$U"/.dev_settings.tmp.* >/dev/null 2>&1 && exit 8
+  ls -d "$U"/.ai_boilerplate.tmp.* >/dev/null 2>&1 && exit 8
   [ "$ROOT_USER" = 1 ] && exit 0
   printf 'ro\n' > "$U/ro"; chmod 444 "$U/ro"
   atomic_replace "$U/src" "$U/ro" || exit 9
@@ -122,9 +122,9 @@ if need "dotfiles link: template" "$G/CLAUDE.md.tmpl"; then
   assert_eq "dotfiles link: now a regular file" True "$([ -f "$CD/CLAUDE.md" ] && [ ! -L "$CD/CLAUDE.md" ] && echo True || echo False)"
   assert_same "dotfiles link: content is the template" "$REPO/$G/CLAUDE.md.tmpl" "$CD/CLAUDE.md"
   assert_eq "dotfiles link: dotfiles file still untouched" "# my dotfiles claude md" "$(cat "$HD/dotfiles/CLAUDE.md")"
-  BKD=""; for d in "$CD"/backups/dev_settings/[0-9]*/; do [ -f "${d}CLAUDE.md" ] && BKD="${d%/}"; done
+  BKD=""; for d in "$CD"/backups/ai_boilerplate/[0-9]*/; do [ -f "${d}CLAUDE.md" ] && BKD="${d%/}"; done
   assert_eq "dotfiles link: link target content backed up" "# my dotfiles claude md" "$(cat "$BKD/CLAUDE.md" 2>/dev/null)"
-  assert_eq "dotfiles link: link text recorded in the backup" ../dotfiles/CLAUDE.md "$(cat "$BKD/CLAUDE.md.dev_settings.link" 2>/dev/null)"
+  assert_eq "dotfiles link: link text recorded in the backup" ../dotfiles/CLAUDE.md "$(cat "$BKD/CLAUDE.md.ai_boilerplate.link" 2>/dev/null)"
   echo "## (S9) --restore 는 심볼릭 링크였던 파일을 링크로 되돌린다(dry-run 은 계획만)"
   if [ -n "$BKD" ]; then
     run_install "$HD" --restore "${BKD##*/}" --dry-run
@@ -135,7 +135,7 @@ if need "dotfiles link: template" "$G/CLAUDE.md.tmpl"; then
     assert_eq "restore link: exit 0" 0 "$RC"
     assert_eq "restore link: CLAUDE.md is the same symlink again" ../dotfiles/CLAUDE.md "$(readlink "$CD/CLAUDE.md" 2>/dev/null)"
     assert_eq "restore link: dotfiles untouched" "# my dotfiles claude md" "$(cat "$HD/dotfiles/CLAUDE.md")"
-    assert_eq "restore link: no link record copied into ~/.claude" 0 "$(find "$CD" -path "$CD/backups" -prune -o -name '*.dev_settings.link' -print | grep -c '')"
+    assert_eq "restore link: no link record copied into ~/.claude" 0 "$(find "$CD" -path "$CD/backups" -prune -o -name '*.ai_boilerplate.link' -print | grep -c '')"
   fi
 fi
 
@@ -143,21 +143,21 @@ echo "## (S8) 링크를 --force 로 덮은 뒤 실패 → 롤백이 심볼릭 �
 if need "link rollback: template" "$G/CLAUDE.md.tmpl"; then
   new_home; HL="$NEW_HOME"; CL="$HL/.claude"; mkdir -p "$CL" "$HL/dotfiles"
   printf '# my dotfiles claude md\n' > "$HL/dotfiles/CLAUDE.md"; ln -s ../dotfiles/CLAUDE.md "$CL/CLAUDE.md"
-  DEV_SETTINGS_FAIL_AT=manifest run_install "$HL" --force --yes
+  AI_BOILERPLATE_FAIL_AT=manifest run_install "$HL" --force --yes
   assert_eq "link rollback: exit 1" 1 "$RC"
   assert_contains "link rollback: link restore reported" "$OUT" "복구  CLAUDE.md (심볼릭 링크 → ../dotfiles/CLAUDE.md)"
   assert_contains "link rollback: complete" "$OUT" "롤백 완료"
   assert_eq "link rollback: same symlink again" ../dotfiles/CLAUDE.md "$(readlink "$CL/CLAUDE.md" 2>/dev/null)"
   assert_eq "link rollback: dotfiles untouched" "# my dotfiles claude md" "$(cat "$HL/dotfiles/CLAUDE.md")"
-  assert_eq "link rollback: no link record left" 0 "$(find "$HL" -name '*.dev_settings.link' | grep -c '')"
-  assert_eq "link rollback: backup dir removed after a full restore" "" "$(ls -d "$CL"/backups/dev_settings/[0-9]* 2>/dev/null)"
+  assert_eq "link rollback: no link record left" 0 "$(find "$HL" -name '*.ai_boilerplate.link' | grep -c '')"
+  assert_eq "link rollback: backup dir removed after a full restore" "" "$(ls -d "$CL"/backups/ai_boilerplate/[0-9]* 2>/dev/null)"
   # 실패가 배치 전(설정 단계)에 나도 링크는 그대로다
-  DEV_SETTINGS_FAIL_AT=settings run_install "$HL" --force --yes
+  AI_BOILERPLATE_FAIL_AT=settings run_install "$HL" --force --yes
   assert_eq "link rollback(settings): exit 1" 1 "$RC"
   assert_eq "link rollback(settings): symlink kept" ../dotfiles/CLAUDE.md "$(readlink "$CL/CLAUDE.md" 2>/dev/null)"
   # 깨진 링크 자리는 '생성'으로 계획된다 → 실패하면 깨진 링크를 그대로 되돌린다
   new_home; HK="$NEW_HOME"; CK="$HK/.claude"; mkdir -p "$CK"; ln -s ../nowhere/CLAUDE.md "$CK/CLAUDE.md"
-  DEV_SETTINGS_FAIL_AT=manifest run_install "$HK"
+  AI_BOILERPLATE_FAIL_AT=manifest run_install "$HK"
   assert_eq "broken link rollback: exit 1" 1 "$RC"
   assert_contains "broken link rollback: link restore reported" "$OUT" "복구  CLAUDE.md (심볼릭 링크 → ../nowhere/CLAUDE.md)"
   assert_eq "broken link rollback: broken symlink restored" ../nowhere/CLAUDE.md "$(readlink "$CK/CLAUDE.md" 2>/dev/null)"
@@ -176,6 +176,6 @@ new_home; HX2="$NEW_HOME"; mkdir -p "$HX2/.claude"
 /bin/bash "$BR/install.sh" --home "$HX2" --yes > "$OUT" 2>&1 < /dev/null; RC=$?
 assert_eq "plan abort(existing dir): exit 1" 1 "$RC"
 assert_eq "plan abort(existing dir): ~/.claude kept" True "$([ -d "$HX2/.claude" ] && echo True || echo False)"
-assert_eq "plan abort(existing dir): no stage dir left" 0 "$(find "$HX2/.claude" -name '.dev_settings.stage.*' | grep -c '')"
+assert_eq "plan abort(existing dir): no stage dir left" 0 "$(find "$HX2/.claude" -name '.ai_boilerplate.stage.*' | grep -c '')"
 
 t_report "test-install-safety"

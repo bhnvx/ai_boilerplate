@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# /harness-init 스킬 동적 컨텍스트: dev_settings 저장소 위치, apply.sh 유무, 감지된 스택, 프로젝트 하네스 파일 현황.
+# /harness-init 스킬 동적 컨텍스트: ai_boilerplate 저장소 위치, apply.sh 유무, 감지된 스택, 프로젝트 하네스 파일 현황.
 # 사용법: context.sh [project-dir]
 # 계약: 항상 exit 0, bash 3.2 호환, 아무것도 쓰지 않는다.
 set +e
@@ -19,18 +19,18 @@ sq() { printf "'%s'" "$(printf '%s' "$1" | sed "s/'/'\\\\''/g")"; }
 
 printf '프로젝트: %s\n' "$dir"
 
-# 1) dev_settings 저장소 경로(install.sh가 기록)
+# 1) ai_boilerplate 저장소 경로(install.sh가 기록)
 repo=""
-if [ -f "$cfg/dev_settings.repo" ]; then
-  IFS= read -r repo < "$cfg/dev_settings.repo"
+if [ -f "$cfg/ai_boilerplate.repo" ]; then
+  IFS= read -r repo < "$cfg/ai_boilerplate.repo"
   repo=${repo%$'\r'}
 fi
 if [ -z "$repo" ]; then
-  printf 'dev_settings 저장소: (미설치: install.sh 실행 필요)\n'
+  printf 'ai_boilerplate 저장소: (미설치: install.sh 실행 필요)\n'
 elif [ ! -d "$repo" ]; then
-  printf 'dev_settings 저장소: %s (경로 없음: 저장소를 옮겼으면 install.sh 재실행 필요)\n' "$repo"
+  printf 'ai_boilerplate 저장소: %s (경로 없음: 저장소를 옮겼으면 install.sh 재실행 필요)\n' "$repo"
 else
-  printf 'dev_settings 저장소: %s\n' "$repo"
+  printf 'ai_boilerplate 저장소: %s\n' "$repo"
   if [ -f "$repo/apply.sh" ]; then
     printf 'apply.sh: 있음 (%s/apply.sh)\n' "$repo"
   else

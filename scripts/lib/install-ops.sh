@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — install.sh 부가 동작: --uninstall, --restore, 사후 요약.
+# ai_boilerplate — install.sh 부가 동작: --uninstall, --restore, 사후 요약.
 # 전제: install-common.sh, install-plan.sh, install-tx.sh 로드.
 
 usage() {
@@ -14,7 +14,7 @@ usage() {
   --home <dir>     $HOME 대신 사용할 홈 디렉터리(테스트용; <dir>/.claude 에 설치, --home=<dir> 도 가능).
                    빈 값은 오류(종료 코드 2).
   --uninstall      매니페스트에 기록된 파일과 관리 설정 항목 제거(사용자 편집은 유지)
-  --restore <ts>   backups/dev_settings/<ts>* 백업을 되돌림(요약에 찍힌 이름, 앞부분만, 또는 전체 경로)
+  --restore <ts>   backups/ai_boilerplate/<ts>* 백업을 되돌림(요약에 찍힌 이름, 앞부분만, 또는 전체 경로)
   --yes, -y        확인 질문 없이 진행. 비대화형 실행(CI·파이프·Claude Code 의 Bash 도구)에서는 파괴적 작업
                    (--uninstall, --restore, 구버전 파일 삭제, --force 덮어쓰기)에 필수 — 없으면 종료 코드 2.
                    단순 설치(추가·백업만 하는 경우)는 질문 없이 진행한다.
@@ -53,13 +53,13 @@ print_next_steps() {
 
 # 매니페스트 기준 제거. 사용자 편집 파일은 유지(WARN). OPT_DRY=1 이면 계획(삭제/갱신 줄과 settings diff)만 출력하고 쓰지 않는다.
 op_uninstall() {
-  local manifest="$CLAUDE_DIR/dev_settings.manifest.json" i=0 n dest rel d empty_overlay removed=0 real dry="${OPT_DRY:-0}"
+  local manifest="$CLAUDE_DIR/ai_boilerplate.manifest.json" i=0 n dest rel d empty_overlay removed=0 real dry="${OPT_DRY:-0}"
   [ -f "$manifest" ] || die "설치 정보가 없다: $manifest (설치되지 않았거나 이미 제거됨)"
   load_manifest "$manifest"
   [ -n "$M_FILE" ] || die "매니페스트를 읽을 수 없다: $manifest"
-  BK_PARENT="$CLAUDE_DIR/backups/dev_settings"
+  BK_PARENT="$CLAUDE_DIR/backups/ai_boilerplate"
   if [ "$dry" = 1 ]; then log "── 제거 계획 ($CLAUDE_DIR) — dry-run: 쓰지 않음 ──"
-  else confirm "$CLAUDE_DIR 에서 dev_settings 설치본을 제거할까?" "제거(--uninstall)" || die "취소함" 1; fi
+  else confirm "$CLAUDE_DIR 에서 ai_boilerplate 설치본을 제거할까?" "제거(--uninstall)" || die "취소함" 1; fi
   n=${#M_REL[@]}
   while [ "$i" -lt "$n" ]; do
     rel="${M_REL[$i]}"; dest="$CLAUDE_DIR/$rel"
@@ -76,7 +76,7 @@ op_uninstall() {
         warn "유지: $rel 은 사용자가 편집함 — 직접 삭제"
       fi
     fi
-    [ "$dry" = 1 ] || rm -f -- "$dest.dev_settings.new"
+    [ "$dry" = 1 ] || rm -f -- "$dest.ai_boilerplate.new"
     i=$((i + 1))
   done
   real=$(resolve_link "$CLAUDE_DIR/settings.json")
@@ -84,8 +84,8 @@ op_uninstall() {
     if ! json_ok "$real"; then
       warn "settings.json 이 유효한 JSON이 아니다(JSONC 불가) — 관리 항목(훅·deny·statusLine)을 직접 제거: $real"
     else
-      if [ "$dry" = 1 ]; then STAGE=$(mktemp -d "${TMPDIR:-/tmp}/dev_settings.dry.XXXXXX") || die "임시 디렉터리 생성 실패"
-      else STAGE=$(mktemp -d "$CLAUDE_DIR/.dev_settings.stage.XXXXXX") || die "스테이지 생성 실패"; fi
+      if [ "$dry" = 1 ]; then STAGE=$(mktemp -d "${TMPDIR:-/tmp}/ai_boilerplate.dry.XXXXXX") || die "임시 디렉터리 생성 실패"
+      else STAGE=$(mktemp -d "$CLAUDE_DIR/.ai_boilerplate.stage.XXXXXX") || die "스테이지 생성 실패"; fi
       empty_overlay="$STAGE/empty.json"; printf '{}\n' > "$empty_overlay"
       if python3 -I "$REPO_DIR/scripts/merge-settings.py" --mode install --base "$real" --overlay "$empty_overlay" \
            --manifest "$manifest" --home "$HOME_DIR" --diff --out "$STAGE/settings.json" 2> "$STAGE/err"; then
@@ -107,10 +107,10 @@ op_uninstall() {
       tx_cleanup
     fi
   fi
-  info "삭제  dev_settings.manifest.json"; info "삭제  dev_settings.repo"
+  info "삭제  ai_boilerplate.manifest.json"; info "삭제  ai_boilerplate.repo"
   if [ "$dry" = 1 ]; then log "dry-run 종료 — 아무것도 쓰지 않았다. (삭제 예정 파일 $removed 개)"; return 0; fi
-  backup_file "$manifest" "dev_settings.manifest.json" "$BK_PARENT"
-  rm -f -- "$manifest" "$CLAUDE_DIR/dev_settings.repo"
+  backup_file "$manifest" "ai_boilerplate.manifest.json" "$BK_PARENT"
+  rm -f -- "$manifest" "$CLAUDE_DIR/ai_boilerplate.repo"
   rmdir -- "$CLAUDE_DIR/skills" 2>/dev/null
   log "제거 완료: 파일 $removed 개 삭제. 백업: ${BK_DIR:-없음}"
   return 0
@@ -119,7 +119,7 @@ op_uninstall() {
 # 백업 디렉터리 내용을 되돌린다. 인수: 백업 이름(앞부분만도 가능), 끝 슬래시가 붙은 이름, 전체 경로.
 # OPT_DRY=1 이면 복구 계획만 출력한다.
 op_restore() {
-  local ts="$1" parent="$CLAUDE_DIR/backups/dev_settings" match="" d n=0 rel target re
+  local ts="$1" parent="$CLAUDE_DIR/backups/ai_boilerplate" match="" d n=0 rel target re
   ts=${ts%/}; ts=${ts##*/}
   re='^[0-9]{8}(-[0-9]{6}(\.[A-Za-z0-9]+)?)?$'
   [[ $ts =~ $re ]] || die "--restore 값은 백업 이름(YYYYmmdd-HHMMSS.XXXXXX, 앞부분만도 가능)이어야 한다: $1" 2
@@ -135,7 +135,7 @@ op_restore() {
     [ -n "$rel" ] || continue
     target="$CLAUDE_DIR/$rel"
     [ "$rel" = settings.json ] && target=$(resolve_link "$target")
-    [ -f "$match/$rel.dev_settings.link" ] && continue   # 심볼릭 링크였던 파일은 아래에서 링크로 되돌린다
+    [ -f "$match/$rel.ai_boilerplate.link" ] && continue   # 심볼릭 링크였던 파일은 아래에서 링크로 되돌린다
     info "복구  $rel"
     [ "${OPT_DRY:-0}" = 1 ] && continue
     mkdir -p -- "$(dirname -- "$target")" || die "디렉터리 생성 실패"
@@ -146,10 +146,10 @@ EOF
   while IFS= read -r rel; do
     [ -n "$rel" ] || continue
     target="$CLAUDE_DIR/$rel"
-    info "복구  $rel (심볼릭 링크 → $(cat -- "$match/$rel.dev_settings.link"))"
+    info "복구  $rel (심볼릭 링크 → $(cat -- "$match/$rel.ai_boilerplate.link"))"
     [ "${OPT_DRY:-0}" = 1 ] && continue
     mkdir -p -- "$(dirname -- "$target")" || die "디렉터리 생성 실패"
-    restore_link "$match/$rel.dev_settings.link" "$target" || die "복구 실패: $rel (심볼릭 링크)"
+    restore_link "$match/$rel.ai_boilerplate.link" "$target" || die "복구 실패: $rel (심볼릭 링크)"
   done <<EOF
 $(list_links "$match")
 EOF

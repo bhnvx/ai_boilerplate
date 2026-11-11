@@ -63,7 +63,7 @@ assert_contains "init: 저장소 미설치" "$T_OUT" "(미설치: install.sh 실
 assert_contains "init: symbolic-ref 브랜치" "$T_OUT" "- git: 저장소 (브랜치 main,"
 REPO_X="$T_TMP/re'po \"x\" \$Z \`id\`"; PROJ_X="$T_TMP/pr'o\"j \$Y & 한"
 mkdir -p "$REPO_X" "$PROJ_X" && : >"$REPO_X/apply.sh"
-printf '%s\n' "$REPO_X" >"$T_HOME/.claude/dev_settings.repo"
+printf '%s\n' "$REPO_X" >"$T_HOME/.claude/ai_boilerplate.repo"
 run_ctx "$SK/harness-init/context.sh" "$PROJ_X"
 assert_rc "init: 특수문자 경로 rc" 0
 line=$(printf '%s\n' "$T_OUT" | sed -n 's/^미리보기 명령: //p')
@@ -103,12 +103,12 @@ ECC_QUALITY_GATE_FIX=true ECC_HOOK_PROFILE=Minimal run_ctx "$SK/harness-init/con
 assert_contains "init: minimal 프로필 → 검사만" "$T_OUT" "검사만 하므로"
 ECC_QUALITY_GATE_FIX=true ECC_DISABLED_HOOKS='pre:x,POST:Quality-Gate' run_ctx "$SK/harness-init/context.sh" "$T_PROJ"
 assert_contains "init: quality-gate 꺼짐 → 검사만" "$T_OUT" "검사만 하므로"
-rm -f "$T_HOME/.claude/settings.json" "$T_HOME/.claude/dev_settings.repo"
+rm -f "$T_HOME/.claude/settings.json" "$T_HOME/.claude/ai_boilerplate.repo"
 
 t_section "harness-init/SKILL.md: apply.sh 동작과 일치(D01·D16·D17)"
 HI=$(cat "$SK/harness-init/SKILL.md")
 assert_not_contains "SKILL.md: '프로필 없이(--profile auto)' 표현 없음" "$HI" '프로필 없이(`--profile auto`)'
-assert_contains "SKILL.md: .claude/CLAUDE.md 만 있으면 후보는 그 옆" "$HI" '`.claude/CLAUDE.md.dev_settings.new`'
+assert_contains "SKILL.md: .claude/CLAUDE.md 만 있으면 후보는 그 옆" "$HI" '`.claude/CLAUDE.md.ai_boilerplate.new`'
 # 커밋할 파일 목록은 apply.sh 가 출력하는 목록(apply.sh 의 `for f in ...; do [ -f "$TARGET/$f" ] && info` 줄)을 모두 담는다
 commit_files=$(sed -n 's/^for f in \(.*\); do \[ -f "\$TARGET\/\$f" ] && info .*/\1/p' "$T_REPO_ROOT/apply.sh")
 assert_contains "apply.sh 커밋할 파일 목록 추출" "$commit_files" ".gitignore"

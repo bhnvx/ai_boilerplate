@@ -1,5 +1,5 @@
 .DS_Store
-*.dev_settings.new
+*.ai_boilerplate.new
 /.claude/settings.local.json
 /CLAUDE.local.md
 tests/.tmp/

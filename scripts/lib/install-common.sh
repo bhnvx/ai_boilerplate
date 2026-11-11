@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — install.sh / apply.sh 공용 헬퍼 (bash 3.2 호환, GNU 전용 도구 금지).
+# ai_boilerplate — install.sh / apply.sh 공용 헬퍼 (bash 3.2 호환, GNU 전용 도구 금지).
 # 소스 전제: 호출자가 REPO_DIR 를 설정한다. 모든 경로는 따옴표로 감싼다.
 
 N_CREATE=0; N_UPDATE=0; N_KEEP=0; N_REMOVE=0; N_SAME=0; N_WARN=0
@@ -21,10 +21,10 @@ die() {
 INSTALL_BASH=/bin/bash
 [ -x "$INSTALL_BASH" ] || INSTALL_BASH=${BASH:-bash}
 
-# 테스트 전용 실패 주입: DEV_SETTINGS_FAIL_AT 에 쉼표로 나열된 지점 이름이 있으면 0.
+# 테스트 전용 실패 주입: AI_BOILERPLATE_FAIL_AT 에 쉼표로 나열된 지점 이름이 있으면 0.
 # usage: fail_at <point>
 fail_at() {
-  case ",${DEV_SETTINGS_FAIL_AT:-}," in *",$1,"*) return 0 ;; esac
+  case ",${AI_BOILERPLATE_FAIL_AT:-}," in *",$1,"*) return 0 ;; esac
   return 1
 }
 
@@ -81,7 +81,7 @@ atomic_replace() {
   local src="$1" dest="$2" dir tmp ro=0
   dir=$(dirname -- "$dest")
   mkdir -p -- "$dir" || return 1
-  tmp=$(mktemp "$dir/.dev_settings.tmp.XXXXXX") || return 1
+  tmp=$(mktemp "$dir/.ai_boilerplate.tmp.XXXXXX") || return 1
   if [ -f "$dest" ]; then
     cp -p -- "$dest" "$tmp" 2>/dev/null || true
     [ -w "$dest" ] || ro=1
@@ -100,7 +100,7 @@ place_file() {
   local src="$1" dest="$2" mode="$3" dir tmp
   dir=$(dirname -- "$dest")
   mkdir -p -- "$dir" || return 1
-  tmp=$(mktemp "$dir/.dev_settings.tmp.XXXXXX") || return 1
+  tmp=$(mktemp "$dir/.ai_boilerplate.tmp.XXXXXX") || return 1
   cat -- "$src" > "$tmp" || { rm -f -- "$tmp"; return 1; }
   chmod "$mode" "$tmp" || { rm -f -- "$tmp"; return 1; }
   if [ -L "$dest" ]; then
@@ -130,7 +130,7 @@ restore_file() {
 }
 
 # 파일을 백업 디렉터리에 상대 경로 그대로 보존(cp -p). 심볼릭 링크(깨진 링크 포함)면 링크 텍스트를
-# <rel>.dev_settings.link 에 남겨 롤백·--restore 가 링크를 다시 만들게 한다(place_file 이 링크를 일반 파일로 바꾸므로).
+# <rel>.ai_boilerplate.link 에 남겨 롤백·--restore 가 링크를 다시 만들게 한다(place_file 이 링크를 일반 파일로 바꾸므로).
 # usage: backup_file <abs-path> <rel-path> <backup-parent>
 backup_file() {
   local src="$1" rel="$2" parent="$3" lt
@@ -139,18 +139,18 @@ backup_file() {
   mkdir -p -- "$(dirname -- "$BK_DIR/$rel")" || return 1
   if [ -L "$src" ]; then
     lt=$(readlink -- "$src") || return 1
-    printf '%s' "$lt" > "$BK_DIR/$rel.dev_settings.link" || return 1
+    printf '%s' "$lt" > "$BK_DIR/$rel.ai_boilerplate.link" || return 1
   fi
   [ -f "$src" ] || return 0
   cp -p -- "$src" "$BK_DIR/$rel"
 }
 
-# 백업에 링크 기록(<rel>.dev_settings.link)이 있는 상대 경로 목록(정렬, 개행 구분).
+# 백업에 링크 기록(<rel>.ai_boilerplate.link)이 있는 상대 경로 목록(정렬, 개행 구분).
 # usage: list_links <backup-dir>
 list_links() {
   [ -d "$1" ] || return 0
-  (cd -P -- "$1" && find . -type f -name '*.dev_settings.link' -print \
-    | sed -e 's|^\./||' -e 's|\.dev_settings\.link$||' | LC_ALL=C sort)
+  (cd -P -- "$1" && find . -type f -name '*.ai_boilerplate.link' -print \
+    | sed -e 's|^\./||' -e 's|\.ai_boilerplate\.link$||' | LC_ALL=C sort)
 }
 
 # 링크 기록대로 <target> 을 심볼릭 링크로 되돌린다. 이미 같은 링크면 그대로 둔다.
@@ -186,12 +186,12 @@ prune_backups() {
   done
 }
 
-# 정렬된 파일 목록(상대 경로, 개행 구분)을 출력. .DS_Store, *.dev_settings.new, 링크 기록(*.dev_settings.link) 제외.
+# 정렬된 파일 목록(상대 경로, 개행 구분)을 출력. .DS_Store, *.ai_boilerplate.new, 링크 기록(*.ai_boilerplate.link) 제외.
 # usage: list_files <dir>
 list_files() {
   local dir="$1"
   [ -d "$dir" ] || return 0
-  (cd -P -- "$dir" && find . -type f ! -name .DS_Store ! -name '*.dev_settings.new' ! -name '*.dev_settings.link' ! -name .gitkeep -print \
+  (cd -P -- "$dir" && find . -type f ! -name .DS_Store ! -name '*.ai_boilerplate.new' ! -name '*.ai_boilerplate.link' ! -name .gitkeep -print \
     | sed 's|^\./||' | LC_ALL=C sort)
 }
 

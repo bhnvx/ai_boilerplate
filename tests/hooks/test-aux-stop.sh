@@ -191,7 +191,7 @@ tx U "views.py 를 고쳐줘" E Edit "$T_PROJ/src/a.py"
 ss implementer
 assert_contains "implementer 선언 없음: 알림" "$MSG" "[subagent:no-scope]"
 assert_contains "implementer 선언 없음: 파일" "$MSG" "수정 파일 1개: src/a.py"
-ss dev-settings:implementer
+ss ai-boilerplate:implementer
 assert_contains "플러그인 이름공간이 붙은 implementer 도 알린다" "$MSG" "[subagent:no-scope]"
 ss myimplementer; quiet "이름이 implementer 로 끝날 뿐인 에이전트는 통과"
 ss Explore; quiet "다른 에이전트는 선언이 없으면 통과"

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""dev_settings — Claude Code settings.json 병합 도구 (stdlib only, python3 >= 3.8, 결정적).
+"""ai_boilerplate — Claude Code settings.json 병합 도구 (stdlib only, python3 >= 3.8, 결정적).
 
 사용법:
   merge-settings.py --mode install|apply --base <path|NONE> --overlay <path> [--overlay <path>...]

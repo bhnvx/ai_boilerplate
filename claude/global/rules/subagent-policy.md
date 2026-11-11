@@ -62,7 +62,7 @@
 - 권한 모드(auto 등)와 allow 규칙은 서브에이전트에도 상속된다 → Bash를 가진 implementer의 git·운영 금지는 규칙으로만 막히므로 통합 때 git status로 확인한다.
 - 위임한 조사를 메인이 반복하지 않는다. 후속 질문은 같은 에이전트에 SendMessage.
 - 워크트리 격리(isolation: worktree)는 기본 미사용:
-  - dev_settings 전역 설정은 worktree.baseRef: "head"(현재 HEAD 기준)다. 이 값이 없으면 default branch 기준으로 분기한다.
+  - ai_boilerplate 전역 설정은 worktree.baseRef: "head"(현재 HEAD 기준)다. 이 값이 없으면 default branch 기준으로 분기한다.
   - 미커밋 변경이 들어가지 않는다.
   - gitignore된 파일(.env·가상환경 등)이 복사되지 않아 테스트를 못 돌릴 수 있다. 프로젝트 .worktreeinclude에 적힌 파일만 복사되고, 비밀 파일을 적으면 워크트리마다 복제된다.
   - 변경이 남은 워크트리는 cleanupPeriodDays(기본 30일, 이 PC 미설정)까지 남는다.

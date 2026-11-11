@@ -106,7 +106,7 @@ ss_who=${H_AGENT:-서브에이전트}
 
 if [ -z "$ss_state" ]; then
   # 선언 없음: 구현 담당만 알린다(탐색·리뷰 에이전트와 Claude Code 내부 에이전트는 조용히 통과).
-  # 플러그인으로 설치하면 에이전트 이름에 이름공간이 붙는다(dev-settings:implementer).
+  # 플러그인으로 설치하면 에이전트 이름에 이름공간이 붙는다(ai-boilerplate:implementer).
   case $H_AGENT in implementer|*:implementer) ;; *) exit 0 ;; esac
   ss_join 3 "${ss_rel[@]}"
   hook_log "$HOOK_NAME" notify subagent:no-scope "$SS_J"

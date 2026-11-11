@@ -15,7 +15,7 @@ hook_fields SL_MODEL='.model.display_name|.model.id' SL_CWD='.workspace.current_
   SL_EFF=.effort.level SL_R5=.rate_limits.five_hour.used_percentage \
   SL_R7=.rate_limits.seven_day.used_percentage SL_WTB=.worktree.branch SL_PR=.pr.number
 sl_rc=$?
-if [ "$sl_rc" -eq 1 ]; then printf '%s\n' 'dev_settings: jq/python3 없음 — 훅 비활성'; exit 0; fi
+if [ "$sl_rc" -eq 1 ]; then printf '%s\n' 'ai_boilerplate: jq/python3 없음 — 훅 비활성'; exit 0; fi
 [ "$sl_rc" -eq 0 ] || exit 0
 
 # sl_num <json-number> [scale] → SL_R = round_half_up(value * scale) (정수). 숫자가 아니면 1 반환.

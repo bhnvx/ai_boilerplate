@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — apply.sh 파일 동작 헬퍼. 전제: install-common.sh 로드, TARGET/REPO_DIR/BK_PARENT/OPT_DRY/OPT_FORCE 설정.
+# ai_boilerplate — apply.sh 파일 동작 헬퍼. 전제: install-common.sh 로드, TARGET/REPO_DIR/BK_PARENT/OPT_DRY/OPT_FORCE 설정.
 # 각 동작은 계획 한 줄을 출력하고(OPT_DRY=1 이면 쓰지 않음) 카운터를 갱신한다.
 
 COMMIT_FILES=(); NOTE_LINES=()
@@ -47,10 +47,10 @@ apply_seed() {  # <src> <rel> <mode>
   track_commit "$rel"
 }
 
-# 없으면 생성, 같으면 유지, 다르면 .dev_settings.new 를 옆에 둠(--force 면 백업 후 덮어쓰기).
+# 없으면 생성, 같으면 유지, 다르면 .ai_boilerplate.new 를 옆에 둠(--force 면 백업 후 덮어쓰기).
 apply_sync() {  # <src> <rel> <mode>
   local src="$1" rel="$2" mode="$3" dest="$TARGET/$2" new
-  new="$dest.dev_settings.new"
+  new="$dest.ai_boilerplate.new"
   [ -f "$src" ] || { warn "소스 없음(건너뜀): ${src#"$REPO_DIR"/}"; return 0; }
   if [ ! -e "$dest" ]; then
     plan_line "생성" "$rel"; N_CREATE=$((N_CREATE + 1))
@@ -62,9 +62,9 @@ apply_sync() {  # <src> <rel> <mode>
     plan_line "갱신(--force)" "$rel"; N_UPDATE=$((N_UPDATE + 1))
     [ "$OPT_DRY" = 1 ] || { overwrite_with_backup "$src" "$dest" "$mode" "$rel"; rm -f -- "$new"; }
   else
-    plan_line "유지(사용자 편집)" "$rel  → $rel.dev_settings.new"; N_KEEP=$((N_KEEP + 1))
+    plan_line "유지(사용자 편집)" "$rel  → $rel.ai_boilerplate.new"; N_KEEP=$((N_KEEP + 1))
     if [ "$OPT_DRY" != 1 ] && ! same_file "$src" "$new"; then cp -- "$src" "$new" || die "복사 실패: $new"; fi
-    warn "유지: $rel 이 템플릿과 다름 — $rel.dev_settings.new 와 비교 후 직접 반영"
+    warn "유지: $rel 이 템플릿과 다름 — $rel.ai_boilerplate.new 와 비교 후 직접 반영"
   fi
 }
 
@@ -94,14 +94,14 @@ apply_claude_md() {  # <work-dir>
       # 손대지 않은 템플릿 사본인데 AGENTS.md 유무만 달라진 경우: 사용자 편집이 아니므로 @AGENTS.md 줄만 맞춘다(백업 후).
       if [ "$agents" = 1 ]; then lbl="갱신(@AGENTS.md 추가)"; else lbl="갱신(@AGENTS.md 제거)"; fi
       plan_line "$lbl" "CLAUDE.md"; N_UPDATE=$((N_UPDATE + 1))
-      [ "$OPT_DRY" = 1 ] || { overwrite_with_backup "$rendered" "$TARGET/CLAUDE.md" 644 "CLAUDE.md"; rm -f -- "$TARGET/CLAUDE.md.dev_settings.new"; }
+      [ "$OPT_DRY" = 1 ] || { overwrite_with_backup "$rendered" "$TARGET/CLAUDE.md" 644 "CLAUDE.md"; rm -f -- "$TARGET/CLAUDE.md.ai_boilerplate.new"; }
       track_commit "CLAUDE.md"
     else
       apply_sync "$rendered" "CLAUDE.md" 644
     fi
   elif [ -f "$TARGET/.claude/CLAUDE.md" ]; then
-    dest="$TARGET/.claude/CLAUDE.md"; new="$dest.dev_settings.new"
-    plan_line "유지(기존 파일)" ".claude/CLAUDE.md  → .claude/CLAUDE.md.dev_settings.new"; N_KEEP=$((N_KEEP + 1))
+    dest="$TARGET/.claude/CLAUDE.md"; new="$dest.ai_boilerplate.new"
+    plan_line "유지(기존 파일)" ".claude/CLAUDE.md  → .claude/CLAUDE.md.ai_boilerplate.new"; N_KEEP=$((N_KEEP + 1))
     if [ "$OPT_DRY" != 1 ] && ! same_file "$rendered" "$dest" && ! same_file "$rendered" "$new"; then
       cp -- "$rendered" "$new" || die "복사 실패: $new"
     fi

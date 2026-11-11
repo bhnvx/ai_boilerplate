@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — install.sh 테스트 1부: 신규 설치, 사용자 설정 보존, 멱등성, 외부 스킬 보존, 훅 중복 제거, dry-run.
+# ai_boilerplate — install.sh 테스트 1부: 신규 설치, 사용자 설정 보존, 멱등성, 외부 스킬 보존, 훅 중복 제거, dry-run.
 . "$(cd -P -- "$(dirname -- "$0")" && pwd -P)/helpers.sh"
 
 G="claude/global"
@@ -12,10 +12,10 @@ snapshot "$C1/skills/learned" "$TROOT/learned.before"; snapshot "$C1/skills/sync
 echo "## (1) 빈 홈에 설치"
 run_install "$H1"
 assert_install_ok "install: exit 0"
-assert_file "install: manifest written" "$C1/dev_settings.manifest.json"
-assert_file "install: repo path written" "$C1/dev_settings.repo"
-assert_eq "install: repo path content" "$REPO" "$(cat "$C1/dev_settings.repo" 2>/dev/null)"
-assert_eq "install: manifest version 1" 1 "$(jq_py "$C1/dev_settings.manifest.json" 'd["version"]')"
+assert_file "install: manifest written" "$C1/ai_boilerplate.manifest.json"
+assert_file "install: repo path written" "$C1/ai_boilerplate.repo"
+assert_eq "install: repo path content" "$REPO" "$(cat "$C1/ai_boilerplate.repo" 2>/dev/null)"
+assert_eq "install: manifest version 1" 1 "$(jq_py "$C1/ai_boilerplate.manifest.json" 'd["version"]')"
 if need "install: CLAUDE.md" "$G/CLAUDE.md.tmpl"; then assert_file "install: CLAUDE.md installed" "$C1/CLAUDE.md"; fi
 for f in "$REPO/$G"/rules/*.md; do [ -f "$f" ] && assert_file "install: rules/${f##*/}" "$C1/rules/${f##*/}"; done
 for f in "$REPO/$G"/agents/*.md; do [ -f "$f" ] && assert_file "install: agents/${f##*/}" "$C1/agents/${f##*/}"; done
@@ -55,11 +55,11 @@ if need "install: settings" "$G/settings.json"; then
   assert_eq "settings: statusLine command" True "$(jq_py "$S" '"statusline.sh" in d["statusLine"]["command"]')"
   assert_eq "settings: language korean" korean "$(jq_py "$S" 'd["language"]')"
   assert_eq "settings: worktree.baseRef head" head "$(jq_py "$S" 'd["worktree"]["baseRef"]')"
-  assert_eq "manifest: settings.hooks recorded" True "$(jq_py "$C1/dev_settings.manifest.json" 'len(d["settings"]["hooks"])>=6')"
-  assert_eq "manifest: deny rules recorded" True "$(jq_py "$C1/dev_settings.manifest.json" '"Read(//**/.env)" in d["settings"]["permissions"]["deny"]')"
+  assert_eq "manifest: settings.hooks recorded" True "$(jq_py "$C1/ai_boilerplate.manifest.json" 'len(d["settings"]["hooks"])>=6')"
+  assert_eq "manifest: deny rules recorded" True "$(jq_py "$C1/ai_boilerplate.manifest.json" '"Read(//**/.env)" in d["settings"]["permissions"]["deny"]')"
 fi
-assert_eq "manifest: files map non-empty" True "$(jq_py "$C1/dev_settings.manifest.json" 'len(d["files"])>0')"
-assert_eq "install: no stage dir left" "" "$(ls -d "$C1"/.dev_settings.stage.* 2>/dev/null)"
+assert_eq "manifest: files map non-empty" True "$(jq_py "$C1/ai_boilerplate.manifest.json" 'len(d["files"])>0')"
+assert_eq "install: no stage dir left" "" "$(ls -d "$C1"/.ai_boilerplate.stage.* 2>/dev/null)"
 
 echo "## (3) 두 번째 실행 → 변경 없음"
 snapshot "$H1" "$TROOT/h1.a"
@@ -68,7 +68,7 @@ assert_install_ok "rerun: exit 0"
 assert_contains "rerun: prints 변경 없음" "$OUT" "변경 없음"
 snapshot "$H1" "$TROOT/h1.b"
 assert_same "rerun: every cksum under home unchanged" "$TROOT/h1.a" "$TROOT/h1.b"
-assert_eq "rerun: no backup dir created" "" "$(ls -d "$C1"/backups/dev_settings/[0-9]* 2>/dev/null)"
+assert_eq "rerun: no backup dir created" "" "$(ls -d "$C1"/backups/ai_boilerplate/[0-9]* 2>/dev/null)"
 
 echo "## (4) learned/synced 스킬 디렉터리 보존"
 snapshot "$C1/skills/learned" "$TROOT/learned.after"; snapshot "$C1/skills/synced" "$TROOT/synced.after"

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings 전체 테스트 실행기.
+# ai_boilerplate 전체 테스트 실행기.
 # - tests/hooks/test-*.sh 를 /bin/bash(3.2)로 한 번, PATH의 다른 bash(예: brew bash 5)가 있으면 그것으로 한 번 더
 # - tests/skills/test-*.sh 를 같은 방식으로
 # - tests/install/run.sh 를 /bin/bash로 한 번
@@ -10,11 +10,11 @@
 #   --quick    추가 bash 실행 생략(/bin/bash만)
 #   --filter   이름에 부분문자열이 들어간 스위트만 실행(selftest 포함 여부도 이름으로 판단)
 #   --verbose  성공한 스위트의 출력도 모두 표시
-# 환경: DEV_SETTINGS_IN_TESTS=1 을 내보내 scripts/validate.sh --repo 가 이 실행기를 재귀 호출하지 않게 한다.
+# 환경: AI_BOILERPLATE_IN_TESTS=1 을 내보내 scripts/validate.sh --repo 가 이 실행기를 재귀 호출하지 않게 한다.
 
 ROOT=$(cd -P -- "$(dirname -- "$0")/.." && pwd -P) || exit 1
 cd "$ROOT" || exit 1
-export DEV_SETTINGS_IN_TESTS=1
+export AI_BOILERPLATE_IN_TESTS=1
 
 quick=0 filter='' verbose=0
 while [ $# -gt 0 ]; do
@@ -42,7 +42,7 @@ if [ "$quick" = 0 ]; then
   done
 fi
 
-LOG_DIR=$(mktemp -d "${TMPDIR:-/tmp}/dev_settings-tests.XXXXXX") || exit 1
+LOG_DIR=$(mktemp -d "${TMPDIR:-/tmp}/ai_boilerplate-tests.XXXXXX") || exit 1
 trap 'rm -rf "$LOG_DIR"' EXIT
 trap 'exit 130' INT TERM
 
@@ -85,7 +85,7 @@ missing_suite() { # missing_suite <표시 이름>
   printf 'FAIL %-48s       파일 없음\n' "$1"
 }
 
-echo "dev_settings 테스트 · bash $base_ver ($BASE_BASH)${EXTRA_BASH:+ + bash $extra_ver ($EXTRA_BASH)}"
+echo "ai_boilerplate 테스트 · bash $base_ver ($BASE_BASH)${EXTRA_BASH:+ + bash $extra_ver ($EXTRA_BASH)}"
 
 # 1) 훅 스위트
 found=0

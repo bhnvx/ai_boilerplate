@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — Claude Code 전역 하네스 설치(~/.claude, 복사 모드).
+# ai_boilerplate — Claude Code 전역 하네스 설치(~/.claude, 복사 모드).
 # 사용법: ./install.sh [--dry-run] [--force] [--no-settings] [--home <dir>] [--uninstall] [--restore <ts>] [--yes] [--help]
 # 종료 코드: 0 성공 · 1 실패(롤백됨) · 2 사용법 오류 · 3 설치됐지만 validate FAIL. bash 3.2 호환.
 # 비대화형 실행(stdin 이 TTY 아님)에서 파괴적 작업(--uninstall/--restore/구버전 삭제/--force 덮어쓰기)은 --yes 가 필수.
@@ -48,9 +48,9 @@ done
 if [ -n "$OPT_RESTORE" ]; then op_restore "$OPT_RESTORE"; exit 0; fi
 if [ "$OPT_UNINSTALL" = 1 ]; then op_uninstall; exit 0; fi
 
-log "dev_settings 설치 — 저장소: $REPO_DIR"
+log "ai_boilerplate 설치 — 저장소: $REPO_DIR"
 log "대상: $CLAUDE_DIR$( [ "$OPT_DRY" = 1 ] && printf ' (dry-run: 쓰지 않음)')"
-load_manifest "$CLAUDE_DIR/dev_settings.manifest.json"
+load_manifest "$CLAUDE_DIR/ai_boilerplate.manifest.json"
 plan_targets
 [ "${#T_SRC[@]}" -gt 0 ] || die "설치할 소스 파일이 없다(claude/global/ 비어 있음)"
 compute_plan

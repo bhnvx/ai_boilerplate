@@ -23,7 +23,7 @@ t_section "session-context: main 브랜치(보호)"
 sc "$T_PROJ"
 assert_rc "main: exit 0" 0
 assert_eq "main: event SessionStart" "SessionStart" "$(event "$T_OUT")"
-assert_contains "main: header" "$C" "[세션 컨텍스트 · dev_settings 훅]"
+assert_contains "main: header" "$C" "[세션 컨텍스트 · ai_boilerplate 훅]"
 assert_contains "main: date + source" "$C" "날짜: $(LC_ALL=C date '+%Y-%m-%d (%a)') · 소스: startup"
 assert_contains "main: repo + branch + upstream" "$C" "저장소: proj dir · 브랜치: main (origin/main 대비 ahead 0 / behind 0)"
 assert_contains "main: clean counts" "$C" "변경: 0 (staged 0 / unstaged 0 / untracked 0)"
@@ -116,7 +116,7 @@ HOOK_FORCE_PARSER=python3 sc "$T_PROJ"
 if t_json_valid "$T_OUT"; then t_pass "python3 parser: valid JSON"; else t_fail "python3 parser: valid JSON" "$T_OUT"; fi
 assert_contains "python3 parser: branch" "$C" "브랜치: main"
 HOOK_FORCE_PARSER=none sc "$T_PROJ"
-assert_contains "no parser: plain text context" "$T_OUT" "[세션 컨텍스트 · dev_settings 훅]"
+assert_contains "no parser: plain text context" "$T_OUT" "[세션 컨텍스트 · ai_boilerplate 훅]"
 assert_contains "no parser: guard warning" "$T_OUT" "⚠ 가드 비활성: jq/python3 없음"
 assert_contains "no parser: cwd from regex" "$T_OUT" "저장소: proj dir"
 CLAUDE_PROJECT_DIR=$T_PROJ t_run_hook session-context '{"hook_event_name":"SessionStart","source":"clear"}'

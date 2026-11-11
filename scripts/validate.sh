@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings 하네스 검증 — 저장소(--repo) · 설치본(--installed) · 프로젝트(--project).
+# ai_boilerplate 하네스 검증 — 저장소(--repo) · 설치본(--installed) · 프로젝트(--project).
 # 출력: "OK|WARN|FAIL|INFO <check>: <detail>" 줄들 + 마지막 줄 "요약: OK n · WARN n · FAIL n".
 # 종료 코드: FAIL이 하나라도 있으면 1(--exit-zero면 0), 사용법 오류 2.
 # python3 필요(JSON·스키마·훅·권한·스킬 검사). 없으면 jq로 JSON 파싱만 하고 bash -n은 항상 수행.
@@ -9,7 +9,7 @@
 #   인수 없음: 저장소의 scripts/validate.sh면 --repo, 설치본(skills/harness-check/)이면 --installed.
 #   --installed와 --project는 함께 쓸 수 있다.
 #   --quiet: OK 줄 숨김, --repo에서 merge-settings selftest·tests/run-all.sh 실행 생략.
-#   DEV_SETTINGS_IN_TESTS=1: tests/run-all.sh 재귀 실행 방지(run-all.sh가 설정).
+#   AI_BOILERPLATE_IN_TESTS=1: tests/run-all.sh 재귀 실행 방지(run-all.sh가 설정).
 #   VALIDATE_NO_PYTHON=1: python3 없는 환경 흉내(대체 경로 테스트용).
 
 VALIDATE_SCRIPT_DIR=$(cd -P -- "$(dirname -- "$0")" && pwd -P)
@@ -864,7 +864,7 @@ def run_tests_in_repo(root, opts):
         rc, out, err = run([sys.executable, ms, '--selftest'], timeout=300)
         tail = ' / '.join((out + err).strip().splitlines()[-3:])
         (ok if rc == 0 else fail)('selftest', 'merge-settings.py --selftest 종료 %d — %s' % (rc, tail or '출력 없음'))
-    if os.environ.get('DEV_SETTINGS_IN_TESTS') == '1':
+    if os.environ.get('AI_BOILERPLATE_IN_TESTS') == '1':
         info('tests', 'tests/run-all.sh 생략(테스트 스위트 안에서 실행 중)')
         return
     ra = os.path.join(root, 'tests', 'run-all.sh')
@@ -872,7 +872,7 @@ def run_tests_in_repo(root, opts):
         fail('tests', 'tests/run-all.sh 없음')
         return
     env = dict(os.environ)
-    env['DEV_SETTINGS_IN_TESTS'] = '1'
+    env['AI_BOILERPLATE_IN_TESTS'] = '1'
     rc, out, err = run([RUN_BASH, ra], timeout=1800, env=env, cwd=root)
     lines = [re.sub(r'\s{2,}', ' ', ln).strip() for ln in (out + err).strip().splitlines() if ln.strip()]
     if rc == 0:
@@ -946,7 +946,7 @@ def check_plugin(root, gs):
 
 def run_repo(root, opts):
     if not os.path.isdir(os.path.join(root, 'claude', 'global')):
-        fail('repo', '%s: dev_settings 저장소 구조가 아님(claude/global 없음)' % root)
+        fail('repo', '%s: ai_boilerplate 저장소 구조가 아님(claude/global 없음)' % root)
         return
     g = os.path.join(root, 'claude', 'global')
     tpl = os.path.join(root, 'claude', 'project-template', 'dot-claude')
@@ -1023,17 +1023,17 @@ def manifest_paths(man, cdir, home):
 
 def check_install_freshness(cdir, man):
     repo = None
-    rp = os.path.join(cdir, 'dev_settings.repo')
+    rp = os.path.join(cdir, 'ai_boilerplate.repo')
     if os.path.isfile(rp):
         repo = ((read_text(rp, 'repo') or '').strip().splitlines() or [''])[0].strip()
     elif isinstance(man, dict) and isinstance(man.get('repo'), str):
         repo = man['repo']
     if not repo:
         if man is not None:
-            warn('repo', 'dev_settings.repo 없음 — 저장소 위치를 알 수 없음(install.sh 재실행)')
+            warn('repo', 'ai_boilerplate.repo 없음 — 저장소 위치를 알 수 없음(install.sh 재실행)')
         return
     if not os.path.isdir(repo):
-        warn('repo', '저장소 경로 없음: %s (dev_settings.repo) — 저장소를 옮겼으면 install.sh 재실행' % repo)
+        warn('repo', '저장소 경로 없음: %s (ai_boilerplate.repo) — 저장소를 옮겼으면 install.sh 재실행' % repo)
         return
     commit = man.get('commit') if isinstance(man, dict) else None
     if not isinstance(commit, str) or commit in ('', 'unknown'):
@@ -1055,7 +1055,7 @@ def run_installed(home, opts):
     if not os.path.isdir(cdir):
         fail('installed', '%s 없음 — install.sh 실행' % cdir)
         return
-    mf = os.path.join(cdir, 'dev_settings.manifest.json')
+    mf = os.path.join(cdir, 'ai_boilerplate.manifest.json')
     man = None
     if os.path.isfile(mf):
         man = load_json(mf)
@@ -1270,7 +1270,7 @@ if [ "$vf_inst" = 1 ]; then
   vf_c="$vf_home/.claude"
   vf_json="$vf_json
 $vf_c/settings.json
-$vf_c/dev_settings.manifest.json"
+$vf_c/ai_boilerplate.manifest.json"
   for vf_d in hooks skills/commit skills/review-diff skills/delegate skills/harness-check skills/harness-init skills/api skills/preflight; do
     [ -d "$vf_c/$vf_d" ] || continue
     vf_sh="$vf_sh

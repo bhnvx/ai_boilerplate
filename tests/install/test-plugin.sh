@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# dev_settings — 플러그인 배포판 테스트: marketplace.json·plugin.json 구조, hooks 가 전역 settings.json 과 같은지,
+# ai_boilerplate — 플러그인 배포판 테스트: marketplace.json·plugin.json 구조, hooks 가 전역 settings.json 과 같은지,
 # 플러그인 경로(공백이 든 경로, ~/.claude 가 없는 HOME)에서 훅이 그대로 동작하는지, install.sh 가 매니페스트를 복사하지 않는지.
 # Claude Code 자체는 실행하지 않는다(`claude plugin validate` 는 수동 확인 — docs/install.md).
 . "$(cd -P -- "$(dirname -- "$0")" && pwd -P)/helpers.sh"

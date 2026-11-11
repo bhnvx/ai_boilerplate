@@ -42,7 +42,7 @@ allowed-tools:
 3. 스테이징 diff 점검: `git diff --staged` (크면 `git diff --staged --stat` 후 파일별로)
    - 비밀 값: 키·토큰·비밀번호·접속 문자열·`.env` 계열 파일 → 발견 시 커밋하지 않고 중단·보고한다(값은 보고에 쓰지 않는다).
    - 디버그 출력: `print(`, `console.log`, `debugger`, `breakpoint()`, `pdb`, 임시 로그.
-   - 임시·생성 파일: `*.orig`, `*.rej`, `*.tmp`, `.DS_Store`, `*.dev_settings.new`, 빌드 산출물.
+   - 임시·생성 파일: `*.orig`, `*.rej`, `*.tmp`, `.DS_Store`, `*.ai_boilerplate.new`, 빌드 산출물.
    - 대용량·바이너리: `git diff --staged --numstat`에서 `-`로 표시되는 파일, 수 MB 이상 파일.
    - 의도와 무관한 변경(포매터가 건드린 다른 파일 등)이 섞였으면 분리를 제안한다.
    - 비밀 값 외의 항목은 목록으로 보여주고 계속할지 묻는다.

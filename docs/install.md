@@ -35,7 +35,7 @@
 ## 3. 설치 동작
 
 - **복사 방식만 지원**(심볼릭 링크 없음). 저장소에서 편집 중인 훅이 열린 모든 세션에 즉시 반영되는 사고를 막고, 설치본 수정 여부를 cksum으로 추적하기 위해서다.
-- **파일별 계획**: `create`(새 파일) · `update`(지난 설치 후 손대지 않은 파일 갱신) · `skip-identical` · `keep-user-edited`(사용자가 고친 파일 유지 + 옆에 `<파일>.dev_settings.new` 생성 + WARN) · `conflict`(매니페스트에 없는 기존 파일, `--force` 없으면 유지 + `.new`) · `remove-stale`(저장소에서 사라진 파일, 손대지 않았으면 백업 후 삭제).
+- **파일별 계획**: `create`(새 파일) · `update`(지난 설치 후 손대지 않은 파일 갱신) · `skip-identical` · `keep-user-edited`(사용자가 고친 파일 유지 + 옆에 `<파일>.ai_boilerplate.new` 생성 + WARN) · `conflict`(매니페스트에 없는 기존 파일, `--force` 없으면 유지 + `.new`) · `remove-stale`(저장소에서 사라진 파일, 손대지 않았으면 백업 후 삭제).
 - **사용자가 지운 관리 파일**: 매니페스트에 있는데 사용자가 지운 파일(예: `rules/web.md`)은 `유지(사용자 삭제) <경로>`로 표시하고 다시 만들지 않는다. `--force`면 다시 만든다(settings 관리 규칙과 같은 정책).
 - **트랜잭션**: 임시 stage 디렉터리에 전부 준비 → `bash -n`·JSON 검사 → 바뀔 파일만 백업 → 배치 → `settings.json`은 마지막에 같은 디렉터리 임시 파일에서 `mv`로 교체(심볼릭 링크면 실제 대상에 기록, 설치 중 변경되면 중단) → 매니페스트 기록. 중간 실패·중단 시 이번 백업으로 되돌린다(심볼릭 링크였던 파일은 백업에 남긴 링크 텍스트로 같은 링크를 다시 만든다 — `--restore`도 같다). 되돌리기에 실패한 파일이 있으면 백업을 지우지 않고 `--restore` 명령을 안내한다. stage 디렉터리는 어떤 경우에도 지운다.
 - **settings 병합**(`scripts/merge-settings.py`): 사용자 키 보존(2절 목록), permission 목록은 합집합, 훅은 매처 정규화(`Edit|Write` = `Write|Edit`)와 명령 기준 중복 제거.
@@ -45,8 +45,11 @@
   - 엄격한 JSON이 아니면 파일을 배치하기 전에 위치(line·col)를 알리고 exit 1로 멈춘다.
 - **사용자가 지운 관리 settings 항목**(permission 규칙·훅·`language`·`statusLine`·`worktree.baseRef`)은 매니페스트 `settings.user_deleted`에 값과 함께 기억하고, 저장소 커밋이 바뀌어 매니페스트를 다시 써도 `--force` 없이는 다시 넣지 않는다. 계획에 `settings: 유지(사용자 삭제): <항목>`과 `--force 로 복원` 안내가 찍힌다. 기억한 항목을 손으로 다시 넣으면 사용자의 것이 되어 `--uninstall`이 지우지 않고, 기억은 남아 또 지워도 다시 넣지 않는다. `--force`는 지운 항목을 다시 넣고 그 기억을 지운다(손으로 다시 넣어 둔 항목의 기억은 남긴다).
 - 이벤트의 유일한 훅이나 `hooks` 객체 전체를 지워도 빈 껍데기(`"SessionStart": []`)를 쓰지 않는다. 매니페스트의 settings 부분이 손상됐으면 그 부분을 무시하고 계획과 `--uninstall`(dry-run 포함)에 `settings: WARN 매니페스트 settings… 형식이 잘못돼 무시함 — settings.json 의 관리 항목을 직접 확인`을 찍는다.
-- **백업**: `~/.claude/backups/dev_settings/<YYYYmmdd-HHMMSS>.XXXXXX/`(최근 10개 유지). apply 백업은 `~/.claude/backups/dev_settings/apply/<프로젝트명>/`.
-- **매니페스트**: `~/.claude/dev_settings.manifest.json`(설치 파일별 cksum, 저장소 커밋, settings 기여분과 사용자 삭제 기억 `user_deleted`), `~/.claude/dev_settings.repo`(저장소 경로).
+- **백업**: `~/.claude/backups/ai_boilerplate/<YYYYmmdd-HHMMSS>.XXXXXX/`(최근 10개 유지). apply 백업은 `~/.claude/backups/ai_boilerplate/apply/<프로젝트명>/`.
+- **매니페스트**: `~/.claude/ai_boilerplate.manifest.json`(설치 파일별 cksum, 저장소 커밋, settings 기여분과 사용자 삭제 기억 `user_deleted`), `~/.claude/ai_boilerplate.repo`(저장소 경로).
+  - 이 저장소의 이전 이름(`dev_settings`)으로 설치한 환경은 매니페스트·백업 경로 이름이 달라 새 버전이 이전 설치를 알아보지 못한다. 이름을 바꾸기 전 버전(커밋 `42bf549`)에서 `./install.sh --uninstall`을 실행한 뒤 다시 설치한다.
+  - `~/.claude/backups/dev_settings/`에 남은 예전 백업은 `--restore` 목록에 나오지 않는다. 필요 없으면 직접 지운다.
+  - 프로젝트 `.gitignore`의 `*.dev_settings.new` 줄은 남아 있어도 해가 없다. 다시 적용하면 새 이름의 줄이 더해진다.
 - `--dry-run`: 아무것도 쓰지 않고 계획과 settings diff만 출력. `--uninstall`·`--restore`와 함께 쓰면 지울·되돌릴 파일 목록(제거는 settings diff 포함)만 출력하고 홈은 그대로 둔다.
 - `--uninstall`: 매니페스트의 파일과 관리 settings 항목을 백업 후 제거. 사용자가 고친 파일·사용자 키·사용자가 다시 넣은 항목은 남긴다. 설치가 넣었거나 `--force`가 바꾼 `$schema`·`worktree.baseRef`, 설치 항목만 담고 있던 빈 컨테이너(이벤트 목록·`hooks`·`permissions`·`worktree` — 설치 전부터 있던 빈 객체 포함), 비어 있는 `skills/` 디렉터리도 정리한다. settings.json은 2칸 들여쓰기로 다시 쓴다.
 - `--restore <타임스탬프>`: 해당 백업 디렉터리 내용을 되돌린다. 설치 요약에 정확한 명령이 출력된다.
@@ -69,7 +72,7 @@
 |---|---|
 | `CLAUDE.md`, `.gitignore`(추가된 줄), `.worktreeinclude` | `CLAUDE.local.md` (개인 메모) |
 | `.claude/settings.json` | `.claude/settings.local.json` (개인 env·권한) |
-| `.claude/rules/**` (`project.md`, 프로필 규칙, `--team`이면 `git.md`) | `*.dev_settings.new` (갱신 후보 파일) |
+| `.claude/rules/**` (`project.md`, 프로필 규칙, `--team`이면 `git.md`) | `*.ai_boilerplate.new` (갱신 후보 파일) |
 | `.claude/hooks/**` (`--with-format-hook`일 때) | `.claude/agent-memory-local/`, `.claude/worktrees/` |
 | 선택: 팀원용 예시(커밋 가능) — `CLAUDE.local.md.example`, `.claude/settings.local.json.example` | |
 
@@ -79,7 +82,7 @@
   - 템플릿은 `CLAUDE.local.md`와 `.claude/settings.local.json`만 복사하게 한다. 워크트리 세션에서도 개인 메모와 개인 권한 설정이 그대로 적용된다.
   - `.env`는 주석으로만 둔다. 넣으면 워크트리마다 비밀 파일 사본이 생기므로 필요할 때 직접 주석을 푼다.
   - 파일이 이미 있으면 내용이 달라도 그대로 두고(`유지(기존 파일)`), `--force`로도 덮어쓰지 않는다.
-- `CLAUDE.md`나 `.claude/CLAUDE.md`가 이미 있으면 새로 만들지 않는다(내용이 다르면 그 파일 옆에 `*.dev_settings.new`만 생성). `.claude/CLAUDE.md`만 있으면 `--force`로도 루트 `CLAUDE.md`를 만들지 않는다.
+- `CLAUDE.md`나 `.claude/CLAUDE.md`가 이미 있으면 새로 만들지 않는다(내용이 다르면 그 파일 옆에 `*.ai_boilerplate.new`만 생성). `.claude/CLAUDE.md`만 있으면 `--force`로도 루트 `CLAUDE.md`를 만들지 않는다.
 - `AGENTS.md`만 있으면 첫 줄이 `@AGENTS.md`인 `CLAUDE.md`를 만든다(AGENTS.md는 계속 로드됨). 다시 적용해도 같은 렌더링과 비교하므로 `변경 없음`이고, `--force`도 `@AGENTS.md`를 유지한다.
 - 대상 파일이 심볼릭 링크(예: `CLAUDE.md → AGENTS.md`)면 `--force`는 링크 대상을 덮어쓰지 않는다. 대상 내용을 백업하고 링크를 일반 파일로 바꾼다. `.claude/settings.json`이 심볼릭 링크면 병합 결과를 실제 대상에 기록한다.
 - `--with-format-hook` 없이 다시 적용하면 PostToolUse 포맷 항목을 뺀다. `.claude/hooks/`의 세 파일(`run-hook.sh`, `format-on-edit.sh`, `lib/common.sh`)이 저장소 사본과 같으면 백업 후 `삭제`한다. 수정된 파일이면 `수정된 훅 파일 — … 수동 정리` WARN을 내고, settings.json이 아직 참조하지 않으면 커밋할 파일 목록에서 뺀다.
@@ -92,14 +95,14 @@
 
 ```
 /plugin marketplace add bhnvx/ai_boilerplate
-/plugin install dev-settings@dev-settings
+/plugin install ai-boilerplate@ai-boilerplate
 ```
 
 | 구성 요소 | `install.sh` | 플러그인 |
 |---|---|---|
 | 가드 훅 3개 · `session-context` · 알림 훅 2개 | 있음 | 있음 |
-| 에이전트 3개 | `explorer` 등 | `dev-settings:explorer` 등(이름공간이 붙는다) |
-| 스킬 7개 | `/commit` 등 | `/dev-settings:commit` 등 |
+| 에이전트 3개 | `explorer` 등 | `ai-boilerplate:explorer` 등(이름공간이 붙는다) |
+| 스킬 7개 | `/commit` 등 | `/ai-boilerplate:commit` 등 |
 | 규칙 5개(`~/.claude/rules/`) | 있음 | 없음 |
 | 권한 규칙(Read deny·allow), `language`, `worktree.baseRef` | 있음 | 없음 |
 | 상태줄, 전역 `CLAUDE.md` | 있음 | 없음 |
@@ -115,13 +118,13 @@
 - `version`을 적지 않았다. 커밋 SHA가 버전이 되어 커밋마다 갱신 대상이 된다. 적으면 그 문자열로 고정된다(공식 문서).
 - 훅의 env 스위치(`CLAUDE_GUARD_*`, `CLAUDE_HOOKS_DISABLE` 등)는 그대로 쓴다([customization.md](customization.md) 1절).
 - 스킬 본문이 참조하는 `~/.claude/rules/*.md`는 플러그인 설치에 없다. 스킬은 본문의 절차만으로 동작한다.
-- `/dev-settings:harness-check`는 점검 결과를 내지 못한다. `install.sh`가 스킬 디렉터리에 복사하는 `validate.sh`가 플러그인에는 없다.
+- `/ai-boilerplate:harness-check`는 점검 결과를 내지 못한다. `install.sh`가 스킬 디렉터리에 복사하는 `validate.sh`가 플러그인에는 없다.
 - 팀 프로젝트에서 미리 선언하려면 프로젝트 `.claude/settings.json`에 넣는다.
 
   ```json
   {
-    "extraKnownMarketplaces": { "dev-settings": { "source": { "source": "github", "repo": "bhnvx/ai_boilerplate" } } },
-    "enabledPlugins": { "dev-settings@dev-settings": true }
+    "extraKnownMarketplaces": { "ai-boilerplate": { "source": { "source": "github", "repo": "bhnvx/ai_boilerplate" } } },
+    "enabledPlugins": { "ai-boilerplate@ai-boilerplate": true }
   }
   ```
 

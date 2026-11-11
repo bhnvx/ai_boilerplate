@@ -7,7 +7,7 @@
 ## 1. 디렉터리 구조
 
 ```
-dev_settings/
+ai_boilerplate/
 ├── README.md                       개요
 ├── docs/                           상세 문서(훅 · 설치 · 구성 요소 · 커스터마이즈 · 제한 · 저장소 구조)
 ├── CLAUDE.md                       이 저장소 작업용 지침
@@ -60,7 +60,7 @@ dev_settings/
   - 훅(`tests/hooks/`): `test-lib-*.sh`(공용 파서·`common.sh`), `test-guards-secrets*.sh`·`test-guards-destructive*.sh`·`test-guards-migrations*.sh`(가드별), `test-guards-cross.sh`(같은 입력을 세 가드에 넣어 함께 확인), `test-guards-nested*.sh`(문자열 안의 문자열·`find -exec` 프로그램 인수와 그 상한·지연), `test-guards-heredoc.sh`(셸이 읽는 heredoc 본문과 본문 속 명령 치환 — 우회 재현·무해 케이스를 세 가드를 합친 판정으로 확인), `test-aux-*.sh`(포맷·세션·상태줄·알림 훅). 번호 붙은 파일은 검증 라운드마다 추가한 회귀·성능 케이스다(200 KB heredoc 3.5초 이내, 큰 입력 3~8초 이내 등). 픽스처는 `tests/hooks/fixtures/`, 공용 함수는 `tests/lib/testlib.sh`.
   - 설치(`tests/install/`): `run.sh`가 `test-install.sh` · `test-install-upgrade.sh` · `test-install-edge.sh` · `test-install-safety.sh` · `test-apply.sh` · `test-apply-edge.sh` · `test-plugin.sh`를 실행한다(공용 `helpers.sh`). `-edge`·`-safety`는 경계 조건과 실패·롤백·백업 보존 케이스다. `test-plugin.sh`는 플러그인 매니페스트의 훅 등록이 전역 `settings.json`과 같은지, 플러그인 경로(공백이 든 경로, `~/.claude` 없는 HOME)에서 훅이 동작하는지 본다.
   - 스킬: `tests/skills/test-skills.sh`(context.sh, allowed-tools와 주입 명령 일치, 프로필 fragment). `tests/run-all.sh`가 함께 실행한다.
-- 테스트 전용 env(평소에는 설정하지 않는다): `HOOK_FORCE_PARSER=jq|python3|none`(훅 파서 강제), `DEV_SETTINGS_FAIL_AT=<지점>[,<지점>…]`(설치 실패 주입. 지점: `place` `settings` `manifest` `restore`), `DEV_SETTINGS_IN_TESTS=1`(run-all.sh가 설정, `validate.sh --repo`의 재귀 실행 방지), `DEV_SETTINGS_TEST_REPO=<dir>`(설치 스위트를 저장소 사본에 실행), `VALIDATE_NO_PYTHON=1`(validate.sh의 python3 없는 경로 흉내), `SP_WBMAX=<n>`(공용 파서의 줄 수 상한, 기본 5000. 가드가 다시 나누는 셸 문자열에는 남은 몫과 이것 중 작은 값), `HOOK_TLIM=<초>`(가드 작업 시간 상한, 기본 6. 숫자가 아니면 상한 없음), `KEEP_TMP=1`·`T_KEEP=1`(설치·훅 테스트 임시 디렉터리 보존).
+- 테스트 전용 env(평소에는 설정하지 않는다): `HOOK_FORCE_PARSER=jq|python3|none`(훅 파서 강제), `AI_BOILERPLATE_FAIL_AT=<지점>[,<지점>…]`(설치 실패 주입. 지점: `place` `settings` `manifest` `restore`), `AI_BOILERPLATE_IN_TESTS=1`(run-all.sh가 설정, `validate.sh --repo`의 재귀 실행 방지), `AI_BOILERPLATE_TEST_REPO=<dir>`(설치 스위트를 저장소 사본에 실행), `VALIDATE_NO_PYTHON=1`(validate.sh의 python3 없는 경로 흉내), `SP_WBMAX=<n>`(공용 파서의 줄 수 상한, 기본 5000. 가드가 다시 나누는 셸 문자열에는 남은 몫과 이것 중 작은 값), `HOOK_TLIM=<초>`(가드 작업 시간 상한, 기본 6. 숫자가 아니면 상한 없음), `KEEP_TMP=1`·`T_KEEP=1`(설치·훅 테스트 임시 디렉터리 보존).
 - CI(`.github/workflows/ci.yml`): push·PR마다 세 작업에서 `tests/run-all.sh`, `validate.sh --repo --quiet`, 비밀·이메일 패턴 검사를 실행한다.
   - ubuntu-latest 두 작업: bash 5와 GNU 도구에 awk를 gawk·mawk로 하나씩 고정한다.
   - macos-latest: `/bin/bash` 3.2와 Homebrew bash 5(run-all.sh가 둘 다 실행), BSD awk.
@@ -76,3 +76,4 @@ dev_settings/
 | `agents/subagent-policy.md` | `claude/global/rules/subagent-policy.md` | 에이전트 정의가 아니라 항상 로드되는 규칙 |
 | `CLAUDE.md.example` | `claude/project-template/CLAUDE.md.tmpl` + `profiles/python`·`profiles/django` 규칙 + `claude/global/rules/git.md`로 증류 후 삭제 | 특정 프로젝트 가이드를 범용 템플릿·선택형 프로필로 분리 |
 | `request.md.example` | `claude/global/rules/core.md`(요청 재진술)와 `/api` 스킬로 흡수 후 삭제 | 요청 양식을 규칙과 워크플로로 일반화 |
+| 이름 `dev_settings` | `ai_boilerplate` | 저장소 이름 변경. 매니페스트·백업 경로·`*.ai_boilerplate.new`·테스트 env(`AI_BOILERPLATE_*`)·플러그인 이름(`ai-boilerplate`)까지 함께 바꿨다. 이전 설치의 처리는 [install.md](install.md) 3절 |

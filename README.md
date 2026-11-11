@@ -1,4 +1,4 @@
-# dev_settings
+# AI BOILERPLATE
 
 Claude Code 전역 하네스(설정·훅·규칙·에이전트·스킬)와 프로젝트 템플릿을 한 저장소에서 관리하는 보일러플레이트다. 언어·프레임워크와 무관하게 동작하고, 언어별 규칙은 원할 때만 프로필로 얹는다.
 
@@ -23,8 +23,8 @@ Claude Code 전역 하네스(설정·훅·규칙·에이전트·스킬)와 프�
 ## 2. 빠른 시작
 
 ```bash
-git clone https://github.com/bhnvx/dev_settings.git ~/vsc/dev_settings
-cd ~/vsc/dev_settings
+git clone https://github.com/bhnvx/ai_boilerplate.git ~/vsc/ai_boilerplate
+cd ~/vsc/ai_boilerplate
 ./install.sh --dry-run   # 파일별 계획과 settings diff만 출력(아무것도 쓰지 않음)
 ./install.sh             # ~/.claude 에 설치(백업·매니페스트 포함)
 ```
@@ -43,7 +43,7 @@ cd ~/vsc/dev_settings
 
 ```
 /plugin marketplace add bhnvx/ai_boilerplate
-/plugin install dev-settings@dev-settings
+/plugin install ai-boilerplate@ai-boilerplate
 ```
 
 ## 3. 구성 요소
@@ -156,7 +156,7 @@ env 변수로 조정한다. 개인 전역은 `~/.claude/settings.json`의 `env`,
 ```
 
 - 파일은 복사한다(심볼릭 링크 아님). 저장소를 고친 뒤에는 `./install.sh`를 다시 실행한다.
-- 사용자가 고친 설치 파일은 덮어쓰지 않고 옆에 `<파일>.dev_settings.new`를 둔다.
+- 사용자가 고친 설치 파일은 덮어쓰지 않고 옆에 `<파일>.ai_boilerplate.new`를 둔다.
 - `settings.json`은 병합한다. `model`·`env`·`enabledPlugins` 같은 사용자 값은 그대로 둔다.
 - 사용자가 지운 관리 항목은 `--force` 없이는 다시 넣지 않는다.
 - 다시 실행해서 바뀔 것이 없으면 `변경 없음`이다.

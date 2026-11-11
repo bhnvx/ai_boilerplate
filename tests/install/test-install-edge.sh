@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# dev_settings — install.sh 테스트 3부(경계): --home '' · 비대화형 확인(--yes 필수) · --uninstall/--restore --dry-run ·
+# ai_boilerplate — install.sh 테스트 3부(경계): --home '' · 비대화형 확인(--yes 필수) · --uninstall/--restore --dry-run ·
 # --restore 인수 정규화 · JSONC/비객체 settings.json 은 파일 배치 전 중단 · 스테이지 정리 · --uninstall 잔재 없음 ·
 # 저장소를 가리키는 심볼릭 링크 ~/.claude 거부 · 저장소 훅 문법 오류.
 . "$(cd -P -- "$(dirname -- "$0")" && pwd -P)/helpers.sh"
 
 G="claude/global"
-stage_dirs() { ls -d "$1"/.dev_settings.stage.* 2>/dev/null; }
+stage_dirs() { ls -d "$1"/.ai_boilerplate.stage.* 2>/dev/null; }
 
 echo "## (E1) --home '' 은 실제 HOME 으로 대체하지 않고 종료 코드 2"
 new_home; HE="$NEW_HOME"
@@ -19,7 +19,7 @@ assert_no_file "empty --home: nothing written to HOME" "$HE/.claude"
 echo "## (E2) 비대화형(stdin 이 TTY 아님)에서 파괴적 작업은 --yes 가 필수(종료 코드 2), 단순 설치는 질문 없음"
 new_home; HA="$NEW_HOME"; CA="$HA/.claude"
 run_install "$HA"; assert_install_ok "confirm: plain install needs no --yes"
-MF="$CA/dev_settings.manifest.json"
+MF="$CA/ai_boilerplate.manifest.json"
 run_install "$HA" --uninstall
 assert_eq "confirm: uninstall without --yes → exit 2" 2 "$RC"
 assert_contains "confirm: names the action" "$OUT" "확인이 필요한 작업(제거(--uninstall))"
@@ -62,7 +62,7 @@ snapshot "$HA" "$TROOT/ha.u2"
 assert_same "uninstall dry-run: every cksum under home identical" "$TROOT/ha.u1" "$TROOT/ha.u2"
 assert_file "uninstall dry-run: manifest still there" "$MF"
 assert_eq "uninstall dry-run: no stage dir" "" "$(stage_dirs "$CA")"
-BK=""; for d in "$CA"/backups/dev_settings/[0-9]*/; do [ -n "$REL" ] && [ -f "$d$REL" ] && BK="${d%/}"; done
+BK=""; for d in "$CA"/backups/ai_boilerplate/[0-9]*/; do [ -n "$REL" ] && [ -f "$d$REL" ] && BK="${d%/}"; done
 if [ -z "$BK" ]; then skip "restore dry-run" "rules 파일이 든 백업 없음"; else
   snapshot "$HA" "$TROOT/ha.r1"
   run_install "$HA" --restore "${BK##*/}" --dry-run
@@ -96,12 +96,12 @@ assert_eq "jsonc: exit 1" 1 "$RC"
 assert_contains "jsonc: line/col from the merge tool" "$OUT" "line 2 col"
 assert_contains "jsonc: hint mentions --no-settings" "$OUT" "--no-settings"
 assert_no_file "jsonc: no hooks placed" "$CJ/hooks"
-assert_no_file "jsonc: no manifest" "$CJ/dev_settings.manifest.json"
+assert_no_file "jsonc: no manifest" "$CJ/ai_boilerplate.manifest.json"
 assert_same "jsonc: settings.json untouched" "$TROOT/jsonc.json" "$CJ/settings.json"
 assert_eq "jsonc: no stage dir left" "" "$(stage_dirs "$CJ")"
 run_install "$HJ" --no-settings
 assert_eq "jsonc: --no-settings installs the files (exit 0 or 3)" True "$( { [ "$RC" = 0 ] || [ "$RC" = 3 ]; } && echo True || echo False)"
-assert_file "jsonc: --no-settings wrote the manifest" "$CJ/dev_settings.manifest.json"
+assert_file "jsonc: --no-settings wrote the manifest" "$CJ/ai_boilerplate.manifest.json"
 assert_same "jsonc: --no-settings leaves settings.json alone" "$TROOT/jsonc.json" "$CJ/settings.json"
 
 echo "## (E6) 최상위가 객체가 아닌 settings.json → 종료 코드 1, 스테이지 정리"
@@ -117,7 +117,7 @@ new_home; HU="$NEW_HOME"; CU="$HU/.claude"; mkdir -p "$CU"
 printf '{\n  "model": "fable",\n  "permissions": {\n    "allow": [\n      "Bash(ls *)"\n    ]\n  }\n}\n' > "$CU/settings.json"
 cp "$CU/settings.json" "$TROOT/seed.json"
 run_install "$HU"; assert_install_ok "residue: install"
-assert_eq "residue: manifest claims \$schema" True "$(jq_py "$CU/dev_settings.manifest.json" 'd["settings"].get("schema", False)')"
+assert_eq "residue: manifest claims \$schema" True "$(jq_py "$CU/ai_boilerplate.manifest.json" 'd["settings"].get("schema", False)')"
 run_install "$HU" --uninstall --yes
 assert_eq "residue: uninstall exit 0" 0 "$RC"
 assert_same "residue: settings.json byte-identical to the seed" "$TROOT/seed.json" "$CU/settings.json"
@@ -147,7 +147,7 @@ if [ ! -f "$RC_DIR/install.sh" ]; then skip "repo copy cases" "cp -R 실패"; el
   assert_contains "broken hook: stage validation failed" "$OUT" "스테이지 검증 실패"
   assert_eq "broken hook: no stage dir left" "" "$(stage_dirs "$HS/.claude")"
   assert_no_file "broken hook: nothing placed" "$HS/.claude/hooks"
-  assert_no_file "broken hook: no manifest" "$HS/.claude/dev_settings.manifest.json"
+  assert_no_file "broken hook: no manifest" "$HS/.claude/ai_boilerplate.manifest.json"
 fi
 
 t_report "test-install-edge"

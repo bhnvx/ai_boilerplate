@@ -3,7 +3,7 @@
 ## 비밀 파일
 - 전체 목록은 guard-secrets 훅이 강제한다: `~/.claude/hooks/lib/secret-patterns.txt` + 훅 안의 경로 규칙.
 - `~/.claude/settings.json`의 Read deny는 그중 핵심(.env 주요 변형·키·인증서·SSH·클라우드 자격 증명·CLI 도구 토큰)만 네이티브로 강제한다. `.env.*` 전체를 deny하면 `.env.example`까지 막히기 때문이다.
-- 한쪽을 바꾸면 다른 쪽도 검토한다(dev_settings 저장소에서 고친 뒤 재설치).
+- 한쪽을 바꾸면 다른 쪽도 검토한다(ai_boilerplate 저장소에서 고친 뒤 재설치).
 - 비밀 파일(.env·.env.*(.example·.sample·.template·.dist 제외)·`*.env`, 키·인증서, 서비스 계정·토큰 JSON, ~/.ssh·~/.aws·~/.config/gh 등)을 열거나 출력하지 않는다.
 - 값이 필요하면 사용자에게 최소한만 요청한다. 직접 찾아 읽지 않는다.
 
