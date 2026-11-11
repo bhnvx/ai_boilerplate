@@ -177,12 +177,23 @@ tx U "소유 파일(수정 허용) pkg, Makefile2" E Edit "$T_PROJ/pkg/x.py" E E
 ss implementer; assert_contains "구분자 없는 낱말은 있는 경로만(pkg 는 소유, Makefile2 는 아님)" "$MSG" "밖을 수정했다: Makefile2 (소유 파일: pkg)"
 tx U "소유 파일(수정 허용) a.py, b.py, c.py, d.py, e.py, f.py, g.py" E Edit "$T_PROJ/1.py" E Edit "$T_PROJ/2.py" E Edit "$T_PROJ/3.py" E Edit "$T_PROJ/4.py" E Edit "$T_PROJ/5.py" E Edit "$T_PROJ/6.py"
 ss implementer; assert_contains "많은 항목은 줄여 쓴다" "$MSG" "1.py, 2.py, 3.py, 4.py, 5.py 외 1개 (소유 파일: a.py, b.py, c.py, d.py, e.py 외 2개)"
+# 에이전트 memory(memory: project|local|user)는 자기 기록이라 범위 밖 수정으로 세지 않는다
+tx U "$PR" E Edit "$T_PROJ/src/api/views.py" E Write "$T_PROJ/.claude/agent-memory/implementer/MEMORY.md" \
+  E Edit "$T_PROJ/.claude/agent-memory-local/implementer/notes.md" E Write "$HOME/.claude/agent-memory/implementer/MEMORY.md"
+ss implementer; quiet "에이전트 memory 디렉터리 수정은 세지 않는다"
+tx U "$PR" E Write "$T_PROJ/.claude/agent-memory/implementer/MEMORY.md" E Edit "$T_PROJ/src/settings.py" E Edit "$T_PROJ/.claude/agent-memoryx/a.md"
+ss implementer
+assert_contains "memory 와 함께 고친 범위 밖 파일은 알린다(이름이 비슷한 디렉터리 포함)" "$MSG" "밖을 수정했다: src/settings.py, .claude/agent-memoryx/a.md (소유 파일:"
+assert_not_contains "memory 파일은 목록에 없다" "$MSG" "MEMORY.md"
 
 t_section "subagent-scope [$P]: 선언 없음 · 모드 · 입력 이상"
 tx U "views.py 를 고쳐줘" E Edit "$T_PROJ/src/a.py"
 ss implementer
 assert_contains "implementer 선언 없음: 알림" "$MSG" "[subagent:no-scope]"
 assert_contains "implementer 선언 없음: 파일" "$MSG" "수정 파일 1개: src/a.py"
+ss dev-settings:implementer
+assert_contains "플러그인 이름공간이 붙은 implementer 도 알린다" "$MSG" "[subagent:no-scope]"
+ss myimplementer; quiet "이름이 implementer 로 끝날 뿐인 에이전트는 통과"
 ss Explore; quiet "다른 에이전트는 선언이 없으면 통과"
 ss ""; quiet "agent_type 빈 값(내부 에이전트)"
 tx U "$PR" E Edit "$T_PROJ/src/settings.py"

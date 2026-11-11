@@ -8,7 +8,8 @@
 #   항목은 파일, 디렉터리(아래 전부), 글롭(src/*.py). '없음'이면 모든 수정이 범위 밖이다. 'owned files' 도 읽는다.
 # 동작: 범위 밖 수정이 있으면 사용자에게 경고한다(systemMessage). CLAUDE_SUBAGENT_SCOPE=remind 면 서브에이전트에게 되돌려
 #   (additionalContext) 보고의 '범위 밖 필요·발견'에 적게 한다(한 번만 — stop_hook_active 면 통과). 끄기: CLAUDE_SUBAGENT_SCOPE=off
-# 선언이 없으면 검사하지 않는다(implementer 가 선언 없이 파일을 고쳤을 때만 알린다). 작업 디렉터리 밖 임시 디렉터리의 파일은 세지 않는다.
+# 선언이 없으면 검사하지 않는다(implementer 가 선언 없이 파일을 고쳤을 때만 알린다). 작업 디렉터리 밖 임시 디렉터리의 파일과
+#   에이전트 memory 디렉터리(.claude/agent-memory/ · .claude/agent-memory-local/)는 세지 않는다.
 # 한계: Bash 로 고친 파일(sed -i·리디렉션·git)은 보지 못한다 — 통합 때 git status·git diff 확인을 대신하지 않는다. 막지 않고 알리기만 한다.
 
 SS_DIR=$(cd -P -- "$(dirname -- "$0")" 2>/dev/null && pwd -P) || exit 0
@@ -31,6 +32,7 @@ while IFS=$'\t' read -r ss_k ss_p; do
   [ "$ss_k" = E ] && [ -n "$ss_p" ] || continue
   hook_abspath_var "$ss_p" "$ss_cwd"; ss_p=$HOOK_ABS
   case $ss_p in
+    */.claude/agent-memory/*|*/.claude/agent-memory-local/*) continue ;;   # 에이전트 memory(memory: user|project|local)는 자기 기록이다
     "$ss_cwd"/*) ;;                                # 작업 디렉터리 안이면 임시 경로여도 센다
     /tmp/*|/private/tmp/*|/var/folders/*|/private/var/folders/*|/var/tmp/*|/private/var/tmp/*) continue ;;
   esac
@@ -103,8 +105,9 @@ ss_join() {  # <최대 개수> 항목… → SS_J ("a, b, c 외 N개")
 ss_who=${H_AGENT:-서브에이전트}
 
 if [ -z "$ss_state" ]; then
-  # 선언 없음: 구현 담당만 알린다(탐색·리뷰 에이전트와 Claude Code 내부 에이전트는 조용히 통과)
-  [ "$H_AGENT" = implementer ] || exit 0
+  # 선언 없음: 구현 담당만 알린다(탐색·리뷰 에이전트와 Claude Code 내부 에이전트는 조용히 통과).
+  # 플러그인으로 설치하면 에이전트 이름에 이름공간이 붙는다(dev-settings:implementer).
+  case $H_AGENT in implementer|*:implementer) ;; *) exit 0 ;; esac
   ss_join 3 "${ss_rel[@]}"
   hook_log "$HOOK_NAME" notify subagent:no-scope "$SS_J"
   hook_emit_system "소유 파일 선언 없음 [subagent:no-scope]: implementer 위임 프롬프트에서 '소유 파일' 선언을 찾지 못해 수정 범위를 검사하지 못했다(수정 파일 ${#ss_rel[@]}개: $SS_J) — git diff 로 직접 확인할 것"

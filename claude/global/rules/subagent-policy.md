@@ -64,9 +64,15 @@
 - 워크트리 격리(isolation: worktree)는 기본 미사용:
   - dev_settings 전역 설정은 worktree.baseRef: "head"(현재 HEAD 기준)다. 이 값이 없으면 default branch 기준으로 분기한다.
   - 미커밋 변경이 들어가지 않는다.
-  - gitignore된 파일(.env·가상환경 등)이 복사되지 않아 테스트를 못 돌릴 수 있다(.worktreeinclude로 복사할 수 있으나 비밀 파일이 복제된다).
+  - gitignore된 파일(.env·가상환경 등)이 복사되지 않아 테스트를 못 돌릴 수 있다. 프로젝트 .worktreeinclude에 적힌 파일만 복사되고, 비밀 파일을 적으면 워크트리마다 복제된다.
   - 변경이 남은 워크트리는 cleanupPeriodDays(기본 30일, 이 PC 미설정)까지 남는다.
   - 쓰려면 사용자 승인을 받고, 그 저장소에서 .claude/worktrees/가 git 제외 대상인지 먼저 확인한다.
+- 에이전트 memory(frontmatter memory: user|project|local)는 기본 미사용:
+  - 켜면 그 에이전트에 Read·Write·Edit가 자동으로 켜진다 → explorer·reviewer의 읽기 전용이 도구가 아니라 규칙으로만 지켜진다.
+  - MEMORY.md 앞부분(200줄 또는 25KB)이 실행할 때마다 시스템 프롬프트에 들어간다 → 틀린 기억이나 지시문 형태의 기억은 이후 실행을 계속 바꾼다.
+  - 쓰려면 사용자 승인을 받고 프로젝트 .claude/agents/ 정의에만 memory: project로 켠다(.claude/agent-memory/<이름>/, 커밋·리뷰 대상).
+  - 기억에는 저장소에서 알 수 없는 사실만 적게 한다. 비밀 값·고객 정보·내부 호스트·작업 지시는 적지 않는다.
+  - 기억은 근거가 아니다. 보고의 근거는 경로:라인으로 받고, 통합 때 memory 디렉터리의 변경도 git diff로 확인한다.
 
 ## 5. 검토·통합·테스트 (메인 책임)
 - 서브에이전트 보고는 주장으로 취급한다: git status·git diff로 실제 변경과 대조하고, 소유 밖 변경을 확인하고, 결론을 좌우하는 근거는 경로:라인을 직접 연다.
