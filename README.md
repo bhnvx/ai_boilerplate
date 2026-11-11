@@ -15,7 +15,7 @@ Claude Code 전역 하네스(설정·훅·규칙·에이전트·스킬)와 프�
 |---|---|
 | 위험한 동작을 막거나 실행 전에 확인받는다 | 가드 훅 3개: 비밀 파일 · 위험 명령 · 마이그레이션 |
 | 놓치기 쉬운 것을 알려 준다 | 알림 훅 2개(검증 없는 완료 보고 · 서브에이전트의 범위 밖 수정), 세션 시작 컨텍스트, 상태줄 |
-| 작업 방식을 맞춘다 | 규칙 5개, 에이전트 3개, 스킬 7개 |
+| 작업 방식을 맞춘다 | 규칙 6개, 에이전트 3개, 스킬 7개 |
 | 프로젝트마다 같은 틀을 적용한다 | 프로젝트 템플릿과 선택형 프로필(`python` · `django` · `fastapi` · `node` · `sandbox`) |
 
 설치하면 이렇게 달라진다.
@@ -111,6 +111,7 @@ cd ai_boilerplate
 | `security.md` | 비밀 파일·값 취급, 운영 접근 금지, 차단 우회 금지 |
 | `web.md` | 웹 솔루션 공통: API 설계, 인증·인가, 데이터, 테스트 계층 |
 | `subagent-policy.md` | 직접 할 일과 위임할 일의 기준, 위임 프롬프트 7항목, 결과 검증 |
+| `plugins.md` | 설치돼 있으면 코드 구현에 superpowers, 프런트 화면에 Impeccable 플러그인을 쓴다. 커밋·위임은 기존 규칙이 우선한다 |
 
 **에이전트**(`~/.claude/agents/`)
 
@@ -132,7 +133,7 @@ cd ai_boilerplate
 | `/api` | 엔드포인트 추가·변경 워크플로(명세 표 → 구현 → 테스트) |
 | `/preflight` | PR 전 점검(마이그레이션 누락, env 동기화, 시크릿 스캔 등) |
 
-도구·모델 배정, 스킬 인수, ECC 플러그인과의 역할 분담은 [docs/components.md](docs/components.md)에 있다.
+도구·모델 배정, 스킬 인수, ECC 플러그인과의 역할 분담, 함께 쓰는 플러그인(superpowers · Impeccable)의 설치 명령은 [docs/components.md](docs/components.md)에 있다. 이 저장소는 두 플러그인을 설치하지 않는다.
 
 ### 3.4 프로필과 프로젝트 템플릿
 
@@ -236,7 +237,7 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 | 문서 | 내용 |
 |---|---|
 | [docs/hooks.md](docs/hooks.md) | 훅 목록, 판정 단계, 명령을 읽는 방법, 가드별 판정 세부, 알림 훅 |
-| [docs/components.md](docs/components.md) | 규칙·에이전트(memory 운용 포함)·스킬·프로필(sandbox 포함) 상세, ECC 플러그인과의 관계 |
+| [docs/components.md](docs/components.md) | 규칙·에이전트(memory 운용 포함)·스킬·프로필(sandbox 포함) 상세, ECC 플러그인과의 관계, 함께 쓰는 플러그인(superpowers · Impeccable) |
 | [docs/install.md](docs/install.md) | `install.sh`·`apply.sh` 동작, 전역 `settings.json`, 프로젝트 템플릿, 플러그인 배포판 |
 | [docs/customization.md](docs/customization.md) | env 변수 전체, 규칙·프로필·비밀 패턴 추가, sandbox 조정 |
 | [docs/limitations.md](docs/limitations.md) | 알려진 제한 전체 |
@@ -259,6 +260,7 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 - sandbox 프로필 실측: macOS(Seatbelt)와 Linux(bubblewrap)의 실제 세션에서 경계와 승인 흐름 확인
 - 플러그인 배포판 실측: 실제 세션에서 훅 발화와 이름공간이 붙은 스킬·에이전트 동작 확인
 - 플러그인 배포판에 규칙을 싣는 방법(플러그인은 `rules/`를 실을 수 없다)
+- `plugins.md` 규칙 실측: superpowers·Impeccable을 설치한 실제 세션에서 규칙대로 스킬이 선택되고 커밋 규칙이 지켜지는지 확인
 
 ## 12. 기여 · 라이선스
 

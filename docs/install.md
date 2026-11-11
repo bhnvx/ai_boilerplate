@@ -104,7 +104,7 @@
 | 가드 훅 3개 · `session-context` · 알림 훅 2개 | 있음 | 있음 |
 | 에이전트 3개 | `explorer` 등 | `ai-boilerplate:explorer` 등(이름공간이 붙는다) |
 | 스킬 7개 | `/commit` 등 | `/ai-boilerplate:commit` 등 |
-| 규칙 5개(`~/.claude/rules/`) | 있음 | 없음 |
+| 규칙 6개(`~/.claude/rules/`) | 있음 | 없음 |
 | 권한 규칙(Read deny·allow), `language`, `worktree.baseRef` | 있음 | 없음 |
 | 상태줄, 전역 `CLAUDE.md` | 있음 | 없음 |
 | 프로젝트 템플릿·프로필(`apply.sh`) | 있음 | 없음 |

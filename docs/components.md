@@ -4,7 +4,7 @@
 
 훅은 [hooks.md](hooks.md), 전역 `settings.json`·프로젝트 템플릿·플러그인 배포판은 [install.md](install.md)에 있다.
 
-## 1. 규칙 5개 (`~/.claude/rules/`, 모두 항상 로드)
+## 1. 규칙 6개 (`~/.claude/rules/`, 모두 항상 로드)
 
 | 파일 | 내용 |
 |---|---|
@@ -13,6 +13,7 @@
 | `security.md` | 비밀 파일·값 취급, 마스킹, 운영 접근 금지, 외부 전송 금지 항목, 차단 우회 금지 |
 | `web.md` | 웹 솔루션 공통: API 설계, 인증·인가, 데이터·마이그레이션 안전, 관측, 설정, 테스트 계층, 프런트, 보안·성능, 문서 |
 | `subagent-policy.md` | 메인 직접 vs 위임 기준, 분할·배정, 위임 프롬프트 7항목, 결과 검증, 모델 배정 |
+| `plugins.md` | 작업별로 쓸 플러그인(코드 구현 superpowers, 프런트 화면 Impeccable), 기존 규칙과 부딪힐 때의 우선순위, 설치돼 있지 않을 때의 동작. 상세는 6절 |
 
 우선순위: 사용자 지시 > 프로젝트 `CLAUDE.md`·`.claude/rules` > 전역 rules. 전역 `CLAUDE.md`는 이 규칙과 스킬 목록을 한 줄씩 안내하고, 프로젝트에 `CLAUDE.md`가 없으면 `/harness-init`을 제안하게 한다.
 
@@ -150,3 +151,32 @@ ECC(everything-claude-code)를 전역으로 켠 PC를 기준으로, 기능이 �
   - `ECC_QUALITY_GATE_FIX`가 `true`(대소문자 무관)이고, `ECC_HOOK_PROFILE`이 `minimal`이 아니고, `ECC_DISABLED_HOOKS`에 `post:quality-gate`가 없다.
   - 그래도 건너뛰는 것은 ECC가 고치는 타입뿐이다: `.py`(ruff/black), `.go`, prettier/biome 대상 `.ts` `.tsx` `.js` `.jsx` `.json` `.md`. `bash -n`·shfmt·rustfmt·terraform fmt·taplo는 항상 실행한다.
   - `CLAUDE_FORMAT_ON_EDIT=force`면 이 판단 없이 실행한다.
+
+## 6. 함께 쓰는 플러그인: superpowers · Impeccable
+
+`rules/plugins.md`는 두 플러그인이 설치돼 있을 때 작업 종류에 맞춰 쓰게 하는 규칙이다. 이 저장소는 두 플러그인을 설치하거나 켜지 않는다. 둘 다 제3자가 만든 플러그인이고 자체 훅을 실행하므로 설치는 사용자가 정한다.
+
+| 작업 | 플러그인 | 설치(Claude Code 세션에서) | 라이선스 · 훅 |
+|---|---|---|---|
+| 코드 구현(기능 추가·변경, 버그 수정, 리팩터링) | [superpowers](https://github.com/obra/superpowers) | `/plugin install superpowers@claude-plugins-official` | MIT · SessionStart |
+| 프런트 화면(UI·스타일·레이아웃·문구) | [Impeccable](https://github.com/pbakaus/impeccable) | `/plugin marketplace add pbakaus/impeccable` 뒤에 `/plugin install impeccable@impeccable` | Apache-2.0 · SessionStart · PostToolUse · Stop |
+
+- **superpowers**: 설계 문답 → 계획 → 구현(TDD) → 리뷰로 이어지는 구현 흐름이다. 스킬 이름에 `superpowers:`가 붙는다.
+- **Impeccable**: 흔한 AI 생성 화면의 특징(Inter 일색, 보라색 그라디언트, 카드 중첩 등)을 피하게 하는 디자인 스킬이다. `critique`·`audit`·`polish` 같은 명령과 규칙 기반 검사기가 있고, 프레임워크와 무관하게 기존 화면·컴포넌트에 쓴다.
+- 한 작업에 화면과 로직이 함께 있으면 화면은 Impeccable, 로직과 테스트는 superpowers 흐름을 따른다.
+
+기존 규칙과의 우선순위:
+
+| 부딪히는 지점 | 따르는 쪽 |
+|---|---|
+| superpowers가 테스트 통과마다 커밋하고 워크트리·브랜치를 만든다 | `git.md`. 사용자가 요청했거나 계획을 승인하면서 허락한 경우에만 한다 |
+| superpowers가 서브에이전트를 띄운다 | `subagent-policy.md`의 위임 프롬프트 7항목과 결과 검증 |
+| superpowers의 설계 문답 vs `core.md`의 '질문은 막혔을 때만' | 구현 작업에서는 superpowers의 문답 |
+| 완료 보고 | `core.md` 형식 |
+| ECC 등 다른 플러그인에 비슷한 스킬(계획·TDD)이 있다 | 구현에는 superpowers를 먼저 쓴다 |
+
+- 설치돼 있지 않으면 세션에서 한 번만 설치 명령을 알리고 플러그인 없이 진행한다.
+- 이 규칙을 쓰지 않으려면 `~/.claude/rules/plugins.md`를 지운다. `install.sh`는 사용자가 지운 관리 파일을 `--force` 없이는 다시 만들지 않는다.
+- 플러그인 배포판에는 규칙이 실리지 않으므로 이 규칙도 없다.
+- Impeccable의 Stop 훅과 이 저장소의 `stop-verify`가 모두 응답이 끝날 때 실행된다. 플러그인 훅과 settings 훅은 순서 없이 병렬로 실행된다.
+- 스킬 이름과 설치 명령은 2026-11-11 기준이다(superpowers 7.0.2, Impeccable 4.8.2). 확인하지 못한 점은 [limitations.md](limitations.md) 8.4절에 있다.

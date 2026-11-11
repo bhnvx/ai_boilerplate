@@ -23,7 +23,7 @@ ai_boilerplate/
 │   │   ├── .claude-plugin/plugin.json  플러그인 매니페스트(훅 등록, 설치 대상 아님)
 │   │   ├── CLAUDE.md.tmpl          → ~/.claude/CLAUDE.md
 │   │   ├── settings.json           ~/.claude/settings.json에 병합
-│   │   ├── rules/                  core · git · security · web · subagent-policy
+│   │   ├── rules/                  core · git · security · web · subagent-policy · plugins
 │   │   ├── agents/                 explorer · implementer · reviewer
 │   │   ├── hooks/                  run-hook.sh(런처) · guard-* · session-context · stop-verify · subagent-scope · format-on-edit · statusline
 │   │   │   └── lib/                common.sh · shellparse.sh · guard-rules.sh · transcript.sh · detect-stack.sh · secret-patterns.txt

@@ -151,9 +151,17 @@
 - **실제 세션에서 확인하지 않았다.** `claude plugin validate`와 로컬 marketplace 설치(구성 요소 인식)까지만 확인했다.
 - 플러그인 훅에서 Stop·SubagentStop이 발화하는지는 공식 문서에 따로 적혀 있지 않다(이벤트 목록에는 있고 플러그인 제한은 언급되지 않는다).
 - 규칙·권한 규칙·상태줄이 없고, `install.sh` 설치와 함께 쓰면 훅이 두 번 실행된다([install.md](install.md) 5절).
-- 저장소에 LICENSE 파일이 없다. 공식 플러그인 디렉터리에 제출하려면 LICENSE나 `plugin.json`의 `license`가 필요하다(`claude plugin validate`의 안내).
+- 플러그인 아이콘이 없다. `claude plugin validate`가 경고한다(`ICON_MISSING`).
 
 ### 8.3 에이전트 memory · `.worktreeinclude`
 
 - 에이전트 `memory`와 `tools` 제한 · `omitClaudeMd` · `isolation: worktree`의 상호작용은 공식 문서에 없다([components.md](components.md) 2.1절).
 - `.worktreeinclude`는 WorktreeCreate 훅을 직접 쓰는 프로젝트에서는 처리되지 않는다(공식 문서). 수동 `git worktree add`에 적용되는지는 문서에 없다.
+
+### 8.4 `plugins.md` 규칙(superpowers · Impeccable)
+
+- **실제 세션에서 확인하지 않았다.** 두 플러그인을 설치한 세션에서 규칙대로 스킬이 선택되는지 보지 못했다. 규칙의 스킬 이름과 설치 명령은 두 플러그인의 저장소(README·매니페스트)에서 확인한 것이다.
+- 규칙은 지침이지 강제가 아니다. superpowers 스킬이 커밋을 지시할 때 `git.md`를 우선할지는 모델이 규칙을 따르는지에 달려 있다. 훅이 확실히 묻는 것은 보호 브랜치 커밋·푸시뿐이다(`guard-destructive`).
+- superpowers 스킬은 자신을 필수 흐름이라고 안내한다. 이 규칙이 정한 예외(작은 수정에는 흐름을 걸지 않는다, 커밋은 허락받은 경우만)와 어느 쪽이 이기는지 확인하지 못했다.
+- 두 플러그인이 스킬 이름이나 명령을 바꾸면 규칙의 이름이 맞지 않게 된다. 기준은 2026-11-11의 superpowers 7.0.2, Impeccable 4.8.2다.
+- 두 플러그인의 훅(superpowers: SessionStart, Impeccable: SessionStart·PostToolUse·Stop)이 하는 일과 이 저장소 훅과의 상호작용은 확인하지 않았다.

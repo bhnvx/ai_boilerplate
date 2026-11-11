@@ -10,6 +10,7 @@
 - MIT 라이선스(`LICENSE`, 플러그인 매니페스트의 `license`).
 - `CONTRIBUTING.md`, `SECURITY.md`, 이 파일, 이슈 템플릿(버그 신고 · 가드 오탐·미탐 · 기능 제안)과 PR 템플릿.
 - README: 배지, 목차, 훅 판정 출력 예시, 업데이트 방법, 자주 묻는 질문.
+- 전역 규칙 `plugins.md`: 설치돼 있으면 코드 구현에 superpowers, 프런트 화면에 Impeccable 플러그인을 쓰게 한다. 커밋·위임은 기존 규칙이 우선하고, 이 저장소는 두 플러그인을 설치하지 않는다([docs/components.md](docs/components.md) 6절).
 
 ### 변경
 - README의 설치 예시에서 clone 경로를 고정하지 않는다. 저장소는 어느 경로에 받아도 된다.

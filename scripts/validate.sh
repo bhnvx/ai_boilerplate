@@ -47,7 +47,7 @@ HOOK_TYPES = ('command', 'http', 'mcp_tool', 'prompt', 'agent')
 SESSION_TYPES = ('command', 'mcp_tool')
 OUR_SKILLS = ('commit', 'review-diff', 'delegate', 'harness-check', 'harness-init', 'api', 'preflight')
 OUR_AGENTS = ('explorer', 'implementer', 'reviewer')
-OUR_RULES = ('core', 'git', 'security', 'web', 'subagent-policy')
+OUR_RULES = ('core', 'git', 'security', 'web', 'subagent-policy', 'plugins')
 RESERVED_SKILLS = {'synced', 'anthropic-skills', 'review', 'code-review', 'doctor', 'checkup', 'simplify',
                    'verify', 'loop', 'debug', 'batch', 'claude-api', 'init'}
 AGENT_MODELS = {'sonnet', 'opus', 'haiku', 'fable', 'inherit'}
