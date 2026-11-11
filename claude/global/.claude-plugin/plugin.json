@@ -1,0 +1,32 @@
+{
+  "name": "dev-settings",
+  "description": "비밀 파일·위험 명령·마이그레이션 가드 훅, 완료 검증·위임 범위 알림 훅, explorer·implementer·reviewer 에이전트, 작업 스킬 7개",
+  "author": { "name": "bhnvx" },
+  "repository": "https://github.com/bhnvx/ai_boilerplate",
+  "keywords": ["hooks", "guard", "subagents", "skills"],
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Read|Edit|Write|MultiEdit|NotebookEdit|Grep|Bash|Monitor",
+        "hooks": [ { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/run-hook.sh guard-secrets", "timeout": 10, "statusMessage": "비밀 파일 접근 검사" } ]
+      },
+      {
+        "matcher": "Bash|Monitor",
+        "hooks": [ { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/run-hook.sh guard-destructive", "timeout": 10, "statusMessage": "위험 명령 검사" } ]
+      },
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash|Monitor",
+        "hooks": [ { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/run-hook.sh guard-migrations", "timeout": 10, "statusMessage": "마이그레이션 보호 검사" } ]
+      }
+    ],
+    "SessionStart": [
+      { "hooks": [ { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/run-hook.sh session-context", "timeout": 10 } ] }
+    ],
+    "Stop": [
+      { "hooks": [ { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/run-hook.sh stop-verify", "timeout": 10 } ] }
+    ],
+    "SubagentStop": [
+      { "hooks": [ { "type": "command", "command": "\"${CLAUDE_PLUGIN_ROOT}\"/hooks/run-hook.sh subagent-scope", "timeout": 10 } ] }
+    ]
+  }
+}

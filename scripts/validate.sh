@@ -881,6 +881,69 @@ def run_tests_in_repo(root, opts):
         fail('tests', 'tests/run-all.sh 종료 %d — %s' % (rc, ' / '.join(lines[-8:])))
 
 
+PLUGIN_HOOK_HOME = '"$HOME"/.claude/hooks/'
+PLUGIN_HOOK_ROOT = '"${CLAUDE_PLUGIN_ROOT}"/hooks/'
+PLUGIN_NAME_RE = re.compile(r'^[a-z0-9]+(-[a-z0-9]+)*$')
+
+
+def plugin_hooks_expected(hooks):
+    """전역 settings 의 hooks 를 플러그인 경로로 옮긴 값(명령의 훅 디렉터리만 바꾼다)."""
+    if isinstance(hooks, dict):
+        return {k: plugin_hooks_expected(v) for k, v in hooks.items()}
+    if isinstance(hooks, list):
+        return [plugin_hooks_expected(v) for v in hooks]
+    if isinstance(hooks, str):
+        return hooks.replace(PLUGIN_HOOK_HOME, PLUGIN_HOOK_ROOT)
+    return hooks
+
+
+def check_plugin(root, gs):
+    """플러그인 배포판 검사: .claude-plugin/marketplace.json → claude/global/.claude-plugin/plugin.json.
+    훅 등록은 전역 settings.json 과 같아야 한다(경로만 ${CLAUDE_PLUGIN_ROOT} 기준). 둘 다 없으면 검사하지 않는다."""
+    mk = os.path.join(root, '.claude-plugin', 'marketplace.json')
+    pj = os.path.join(root, 'claude', 'global', '.claude-plugin', 'plugin.json')
+    if not os.path.isfile(mk) and not os.path.isfile(pj):
+        return
+    mark = len(ITEMS)
+    docs = {}
+    for f in (mk, pj):
+        if not os.path.isfile(f):
+            fail('plugin', '%s 없음 — marketplace.json 과 plugin.json 은 함께 둔다' % disp(f))
+            continue
+        d = load_json(f)
+        if d is not None and not isinstance(d, dict):
+            fail('plugin', '%s: 최상위가 객체가 아님' % disp(f))
+            d = None
+        docs[f] = d
+    m, p = docs.get(mk), docs.get(pj)
+    for f, d, who in ((mk, m, 'owner'), (pj, p, 'author')):
+        if d is None:
+            continue
+        if not (isinstance(d.get('name'), str) and PLUGIN_NAME_RE.match(d['name'])):
+            fail('plugin', '%s: name 은 kebab-case 문자열이어야 함' % disp(f))
+        person = d.get(who)
+        if who == 'owner' and not (isinstance(person, dict) and isinstance(person.get('name'), str)
+                                   and person['name'].strip()):
+            fail('plugin', '%s: owner.name 이 필요함' % disp(f))
+        if isinstance(person, dict) and 'email' in person:
+            fail('plugin', '%s: %s.email 을 넣지 않는다(공개 저장소)' % (disp(f), who))
+    if p is not None and isinstance(gs, dict) and p.get('hooks') != plugin_hooks_expected(gs.get('hooks')):
+        fail('plugin', '%s: hooks 가 claude/global/settings.json 의 hooks 와 다름 — 훅 등록을 바꾸면 양쪽을 함께 고친다'
+             '(명령 경로만 %s → %s)' % (disp(pj), PLUGIN_HOOK_HOME, PLUGIN_HOOK_ROOT))
+    if m is not None:
+        plugins = m.get('plugins')
+        entry = None
+        for e in plugins if isinstance(plugins, list) else []:
+            if isinstance(e, dict) and e.get('source') == './claude/global':
+                entry = e
+        if entry is None:
+            fail('plugin', '%s: plugins 에 source 가 "./claude/global" 인 항목이 없음' % disp(mk))
+        elif p is not None and entry.get('name') != p.get('name'):
+            fail('plugin', '%s: plugins 항목의 name 이 plugin.json 의 name 과 다름' % disp(mk))
+    if not issues_since(mark):
+        ok('plugin', 'marketplace.json·plugin.json 일치, hooks 가 전역 settings.json 과 같음')
+
+
 def run_repo(root, opts):
     if not os.path.isdir(os.path.join(root, 'claude', 'global')):
         fail('repo', '%s: dev_settings 저장소 구조가 아님(claude/global 없음)' % root)
@@ -909,6 +972,7 @@ def run_repo(root, opts):
         if f not in checked and load_json(f) is not None:
             ok('json', disp(f))
     check_secret_sync(gs, os.path.join(g, 'hooks', 'lib', 'secret-patterns.txt'), True)
+    check_plugin(root, gs)
     bad_names = [p for p in walk_files(os.path.join(root, 'claude'), lambda p: os.path.basename(p) in
                                        ('CLAUDE.md', 'CLAUDE.local.md'))]
     bad_names += walk_files(prof, lambda p: os.path.basename(p) in ('CLAUDE.md', 'CLAUDE.local.md'))

@@ -24,7 +24,7 @@ run_suite() {  # <script>
 }
 
 echo "== tests/install ($BASH_BIN; repo: $REPO) =="
-for s in test-install.sh test-install-upgrade.sh test-install-edge.sh test-install-safety.sh test-apply.sh test-apply-edge.sh; do
+for s in test-install.sh test-install-upgrade.sh test-install-edge.sh test-install-safety.sh test-apply.sh test-apply-edge.sh test-plugin.sh; do
   echo "--- $s ---"
   run_suite "$s"
 done

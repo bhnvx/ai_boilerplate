@@ -1,0 +1,12 @@
+{
+  "name": "dev-settings",
+  "description": "Claude Code 보일러플레이트 dev_settings의 가드 훅·에이전트·스킬 배포판",
+  "owner": { "name": "bhnvx" },
+  "plugins": [
+    {
+      "name": "dev-settings",
+      "source": "./claude/global",
+      "description": "비밀 파일·위험 명령·마이그레이션 가드 훅, 완료 검증·위임 범위 알림 훅, explorer·implementer·reviewer 에이전트, 작업 스킬 7개"
+    }
+  ]
+}
