@@ -9,8 +9,9 @@ Claude Code 보일러플레이트 저장소다. 언어·프레임워크 무관�
 - `scripts/` — merge-settings.py, validate.sh, update-schema.sh, lib/(install.sh·apply.sh 공용 install-*.sh)
 - `tests/` — run-all.sh, lib/, hooks/, skills/, install/
 - `schemas/` — settings JSON 스키마 스냅샷
+- `docs/` — 상세 문서: hooks(훅 판정) · install · components · customization · limitations · development
 - `vscode/`, `copilot/` — 에디터·Copilot 설정(Claude Code와 별개)
-- 상세 설명은 README.md.
+- README.md는 개요만 담는다. 판정 규칙·설치 동작·제한 같은 세부는 `docs/`의 해당 문서에 쓴다.
 
 ## 규칙
 - 이 PC의 실제 `~/.claude`를 수정하지 않는다. install.sh 테스트는 `--home <임시 디렉터리>`, apply.sh 테스트는 임시 프로젝트 디렉터리로만 한다.
@@ -21,7 +22,7 @@ Claude Code 보일러플레이트 저장소다. 언어·프레임워크 무관�
   - 모든 `.sh`는 `/bin/bash -n` 통과
 - awk는 POSIX 기능만 쓰고 macOS `/usr/bin/awk`(BWK)·gawk·mawk에서 출력이 같아야 한다(CI가 셋 다 돌린다): `gensub`·`asort`·`strftime`·`systime`·`PROCINFO`·`IGNORECASE`·`FPAT`·`nextfile` 금지
 - 변경 후 실행한다: `bash tests/run-all.sh`, `bash scripts/validate.sh --repo --quiet`(`--quiet` 없이는 run-all.sh를 한 번 더 돌린다)
-- 훅을 고치면 `tests/hooks/`에 통과·차단 케이스를 함께 추가한다.
+- 훅을 고치면 `tests/hooks/`에 통과·차단 케이스를 함께 추가하고, 동작이 바뀌면 `docs/hooks.md`(한계는 `docs/limitations.md`)를 고친다.
 - 템플릿 명명은 `CLAUDE.md.tmpl`, `dot-claude/`로 한다:
   - 이유: 이 저장소에서 작업할 때 Claude Code가 하위 `CLAUDE.md`·`.claude/rules/`를 불러오지 않게 하려는 것
   - install.sh·apply.sh가 복사할 때 이름을 바꾼다
