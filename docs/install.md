@@ -2,13 +2,13 @@
 
 [← README](../README.md)
 
-`install.sh`(전역 `~/.claude`)와 `apply.sh`(프로젝트)가 하는 일을 자세히 적은 문서다.
+`install.sh`(전역 `~/.claude`)와 `apply.sh`(프로젝트)가 하는 일을 자세히 적은 문서다. 플러그인 배포판은 5절에 있다.
 
 ## 1. 명령
 
 ```
 ./install.sh [--dry-run] [--force] [--no-settings] [--home <dir>] [--uninstall] [--restore <타임스탬프>] [--yes] [--help]
-./apply.sh <프로젝트> [--profile python|django|fastapi|node|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
+./apply.sh <프로젝트> [--profile python|django|fastapi|node|sandbox|auto]... [--with-format-hook] [--force] [--dry-run] [--team] [--yes] [--help]
 ```
 
 ## 2. 전역 `settings.json`
@@ -67,16 +67,65 @@
 
 | 커밋할 파일 | 커밋하지 않을 파일 |
 |---|---|
-| `CLAUDE.md`, `.gitignore`(추가된 줄) | `CLAUDE.local.md` (개인 메모) |
+| `CLAUDE.md`, `.gitignore`(추가된 줄), `.worktreeinclude` | `CLAUDE.local.md` (개인 메모) |
 | `.claude/settings.json` | `.claude/settings.local.json` (개인 env·권한) |
 | `.claude/rules/**` (`project.md`, 프로필 규칙, `--team`이면 `git.md`) | `*.dev_settings.new` (갱신 후보 파일) |
 | `.claude/hooks/**` (`--with-format-hook`일 때) | `.claude/agent-memory-local/`, `.claude/worktrees/` |
 | 선택: 팀원용 예시(커밋 가능) — `CLAUDE.local.md.example`, `.claude/settings.local.json.example` | |
 
 - `.gitignore`에 `gitignore.claude`의 줄을 중복 없이 추가한다(기존 파일이 CRLF면 CRLF로).
+- `.worktreeinclude`: Claude Code가 워크트리를 만들 때(`claude --worktree`, 서브에이전트 `isolation: worktree`, 데스크톱 앱 병렬 세션) 함께 복사할 파일 목록이다(`.gitignore` 문법).
+  - 패턴에 맞으면서 gitignore된 파일만 복사된다. git이 추적하는 파일은 복사되지 않는다(공식 문서).
+  - 템플릿은 `CLAUDE.local.md`와 `.claude/settings.local.json`만 복사하게 한다. 워크트리 세션에서도 개인 메모와 개인 권한 설정이 그대로 적용된다.
+  - `.env`는 주석으로만 둔다. 넣으면 워크트리마다 비밀 파일 사본이 생기므로 필요할 때 직접 주석을 푼다.
+  - 파일이 이미 있으면 내용이 달라도 그대로 두고(`유지(기존 파일)`), `--force`로도 덮어쓰지 않는다.
 - `CLAUDE.md`나 `.claude/CLAUDE.md`가 이미 있으면 새로 만들지 않는다(내용이 다르면 그 파일 옆에 `*.dev_settings.new`만 생성). `.claude/CLAUDE.md`만 있으면 `--force`로도 루트 `CLAUDE.md`를 만들지 않는다.
 - `AGENTS.md`만 있으면 첫 줄이 `@AGENTS.md`인 `CLAUDE.md`를 만든다(AGENTS.md는 계속 로드됨). 다시 적용해도 같은 렌더링과 비교하므로 `변경 없음`이고, `--force`도 `@AGENTS.md`를 유지한다.
 - 대상 파일이 심볼릭 링크(예: `CLAUDE.md → AGENTS.md`)면 `--force`는 링크 대상을 덮어쓰지 않는다. 대상 내용을 백업하고 링크를 일반 파일로 바꾼다. `.claude/settings.json`이 심볼릭 링크면 병합 결과를 실제 대상에 기록한다.
 - `--with-format-hook` 없이 다시 적용하면 PostToolUse 포맷 항목을 뺀다. `.claude/hooks/`의 세 파일(`run-hook.sh`, `format-on-edit.sh`, `lib/common.sh`)이 저장소 사본과 같으면 백업 후 `삭제`한다. 수정된 파일이면 `수정된 훅 파일 — … 수동 정리` WARN을 내고, settings.json이 아직 참조하지 않으면 커밋할 파일 목록에서 뺀다.
 - `.claude/rules/project.md`: 서브에이전트 보충 규칙(환경 함정, 메인 전용 공유 핫스팟, 검증 명령, 금지 사항) 템플릿.
 - 팀 파일(`.claude/**`, `CLAUDE.md`)에 `~/.claude/`나 개인 스킬(`/commit`, `/harness-init`, `/harness-check`, `/preflight`, `/review-diff`, `/delegate`) 언급이 있으면 `validate.sh --project`가 WARN을 낸다.
+
+## 5. 플러그인으로 설치
+
+저장소를 받지 않고 훅·에이전트·스킬만 쓰는 배포판이다. Claude Code 세션에서 실행한다.
+
+```
+/plugin marketplace add bhnvx/ai_boilerplate
+/plugin install dev-settings@dev-settings
+```
+
+| 구성 요소 | `install.sh` | 플러그인 |
+|---|---|---|
+| 가드 훅 3개 · `session-context` · 알림 훅 2개 | 있음 | 있음 |
+| 에이전트 3개 | `explorer` 등 | `dev-settings:explorer` 등(이름공간이 붙는다) |
+| 스킬 7개 | `/commit` 등 | `/dev-settings:commit` 등 |
+| 규칙 5개(`~/.claude/rules/`) | 있음 | 없음 |
+| 권한 규칙(Read deny·allow), `language`, `worktree.baseRef` | 있음 | 없음 |
+| 상태줄, 전역 `CLAUDE.md` | 있음 | 없음 |
+| 프로젝트 템플릿·프로필(`apply.sh`) | 있음 | 없음 |
+
+- 플러그인은 규칙 파일과 권한 규칙을 실을 수 없다. 플러그인의 `settings.json`은 `agent`·`subagentStatusLine` 키만 적용된다(공식 문서). 전체 구성은 `install.sh`로 설치한다.
+- **둘을 함께 쓰지 않는다.** 훅이 두 번 실행되고 스킬·에이전트가 두 벌 생긴다.
+- 구성:
+  - 저장소 루트의 `.claude-plugin/marketplace.json`이 `./claude/global`을 플러그인으로 가리킨다.
+  - `claude/global/.claude-plugin/plugin.json`이 훅을 등록한다. `skills/`·`agents/`는 기본 위치라 따로 적지 않는다.
+  - 훅 등록은 전역 `settings.json`의 `hooks`와 같고 명령 경로만 `"${CLAUDE_PLUGIN_ROOT}"/hooks/run-hook.sh`다. `validate.sh --repo`와 `tests/install/test-plugin.sh`가 둘을 대조한다.
+  - `install.sh`는 `.claude-plugin/`을 `~/.claude`에 복사하지 않는다.
+- `version`을 적지 않았다. 커밋 SHA가 버전이 되어 커밋마다 갱신 대상이 된다. 적으면 그 문자열로 고정된다(공식 문서).
+- 훅의 env 스위치(`CLAUDE_GUARD_*`, `CLAUDE_HOOKS_DISABLE` 등)는 그대로 쓴다([customization.md](customization.md) 1절).
+- 스킬 본문이 참조하는 `~/.claude/rules/*.md`는 플러그인 설치에 없다. 스킬은 본문의 절차만으로 동작한다.
+- `/dev-settings:harness-check`는 점검 결과를 내지 못한다. `install.sh`가 스킬 디렉터리에 복사하는 `validate.sh`가 플러그인에는 없다.
+- 팀 프로젝트에서 미리 선언하려면 프로젝트 `.claude/settings.json`에 넣는다.
+
+  ```json
+  {
+    "extraKnownMarketplaces": { "dev-settings": { "source": { "source": "github", "repo": "bhnvx/ai_boilerplate" } } },
+    "enabledPlugins": { "dev-settings@dev-settings": true }
+  }
+  ```
+
+- 확인한 범위(Claude Code 2.1.322):
+  - `claude plugin validate .` 통과(`version` 미지정 경고 1건).
+  - 격리한 설정 디렉터리에서 로컬 marketplace로 설치해 스킬 7개 · 에이전트 3개 · 훅 이벤트 4개가 인식되는 것을 확인했다.
+  - 실제 세션에서의 훅 발화와 스킬·에이전트 동작은 확인하지 않았다([limitations.md](limitations.md) 8절).

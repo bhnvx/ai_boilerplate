@@ -5,7 +5,8 @@ Claude Code 보일러플레이트 저장소다. 언어·프레임워크 무관�
 ## 구조
 - `claude/global/` → `~/.claude/`에 설치(install.sh): settings.json, rules/, agents/, hooks/, skills/, CLAUDE.md.tmpl
 - `claude/project-template/` → 프로젝트에 적용(apply.sh): CLAUDE.md.tmpl, CLAUDE.local.md.example, gitignore.claude, dot-claude/
-- `profiles/<name>/` — 선택형 프로필(rules/*.md + settings.fragment.json)
+- `profiles/<name>/` — 선택형 프로필(rules/*.md + settings.fragment.json): 언어 프로필 4개와 `sandbox`
+- `.claude-plugin/marketplace.json` + `claude/global/.claude-plugin/plugin.json` — 플러그인 배포판(훅·에이전트·스킬만 담긴다)
 - `scripts/` — merge-settings.py, validate.sh, update-schema.sh, lib/(install.sh·apply.sh 공용 install-*.sh)
 - `tests/` — run-all.sh, lib/, hooks/, skills/, install/
 - `schemas/` — settings JSON 스키마 스냅샷
@@ -23,10 +24,12 @@ Claude Code 보일러플레이트 저장소다. 언어·프레임워크 무관�
 - awk는 POSIX 기능만 쓰고 macOS `/usr/bin/awk`(BWK)·gawk·mawk에서 출력이 같아야 한다(CI가 셋 다 돌린다): `gensub`·`asort`·`strftime`·`systime`·`PROCINFO`·`IGNORECASE`·`FPAT`·`nextfile` 금지
 - 변경 후 실행한다: `bash tests/run-all.sh`, `bash scripts/validate.sh --repo --quiet`(`--quiet` 없이는 run-all.sh를 한 번 더 돌린다)
 - 훅을 고치면 `tests/hooks/`에 통과·차단 케이스를 함께 추가하고, 동작이 바뀌면 `docs/hooks.md`(한계는 `docs/limitations.md`)를 고친다.
+- 훅 등록(`claude/global/settings.json`의 `hooks`)을 바꾸면 `claude/global/.claude-plugin/plugin.json`의 `hooks`도 같이 바꾼다. 명령 경로만 `"${CLAUDE_PLUGIN_ROOT}"/hooks/`로 다르고, `validate.sh --repo`가 둘을 대조한다.
 - 템플릿 명명은 `CLAUDE.md.tmpl`, `dot-claude/`로 한다:
   - 이유: 이 저장소에서 작업할 때 Claude Code가 하위 `CLAUDE.md`·`.claude/rules/`를 불러오지 않게 하려는 것
   - install.sh·apply.sh가 복사할 때 이름을 바꾼다
   - `claude/` 아래에 `CLAUDE.md` 파일이나 `.claude/` 디렉터리를 만들지 않는다
+  - `claude/global/.claude-plugin/`은 플러그인 매니페스트 디렉터리다(`.claude/`와 다르다). `install.sh`는 복사하지 않는다
 - 비밀 패턴: 훅(`claude/global/hooks/lib/secret-patterns.txt` + `guard-secrets.sh`의 경로 규칙)이 전체 목록을, `claude/global/settings.json`의 Read deny가 그 핵심 부분집합(.env 주요 변형·키·인증서·SSH·클라우드 자격 증명·CLI 도구 토큰)을 강제한다. 한쪽을 바꾸면 다른 쪽도 검토한다. `.env.*`에서 제외하는 것은 `.example`·`.sample`·`.template`·`.dist`다.
 - 문서·규칙·훅 메시지는 한국어, 식별자는 영어로 쓴다.
 - 공개 저장소다: 비밀·이메일·전화번호·고객명·내부 호스트를 넣지 않는다.

@@ -2,7 +2,7 @@
 
 [← README](../README.md)
 
-훅은 [hooks.md](hooks.md), 전역 `settings.json`과 프로젝트 템플릿은 [install.md](install.md)에 있다.
+훅은 [hooks.md](hooks.md), 전역 `settings.json`·프로젝트 템플릿·플러그인 배포판은 [install.md](install.md)에 있다.
 
 ## 1. 규칙 5개 (`~/.claude/rules/`, 모두 항상 로드)
 
@@ -32,6 +32,44 @@
   - 실린다면 general-purpose·플러그인 에이전트를 띄울 때마다 `subagent-policy.md`(약 14KB, 4~5K 토큰) 비용이 든다.
   - 정책을 항상 적용하는 대가로 감수한 선택이다.
 
+### 2.1 에이전트 memory 운용
+
+서브에이전트 frontmatter의 `memory`는 그 에이전트가 실행 사이에 기억을 남기게 한다. **세 에이전트 정의에는 넣지 않았다**(기본 미사용, 정책 §4). 이유는 두 가지다.
+
+- 켜면 Read·Write·Edit가 자동으로 켜진다(공식 문서). `explorer`·`reviewer`가 `tools: Read, Grep, Glob`으로 보장하던 읽기 전용이 규칙으로만 지켜진다. `tools` 제한과 자동 활성화 중 무엇이 우선하는지는 문서에 없다.
+- `MEMORY.md`의 앞 200줄 또는 25KB가 실행할 때마다 시스템 프롬프트에 들어간다. 틀린 기억이나 "항상 ~한다" 같은 지시문이 한 번 들어가면 이후 실행을 계속 바꾼다.
+
+| 값 | 위치 | 커밋 | 쓰는 경우 |
+|---|---|---|---|
+| `project` | `<프로젝트>/.claude/agent-memory/<에이전트>/` | 한다(팀 공유, PR에서 리뷰) | 권장. 이 저장소에만 해당하는 지식 |
+| `local` | `<프로젝트>/.claude/agent-memory-local/<에이전트>/` | 하지 않는다(`gitignore.claude`가 제외) | 혼자 시험해 볼 때 |
+| `user` | `~/.claude/agent-memory/<에이전트>/` | 해당 없음 | 비권장. 프로젝트 사이에 내용이 섞인다 |
+
+켜는 방법(프로젝트 단위, 사용자 승인 후):
+
+1. 전역 정의를 프로젝트로 복사한다: `~/.claude/agents/reviewer.md` → `<프로젝트>/.claude/agents/reviewer.md`. 같은 이름이면 프로젝트 정의가 전역 정의보다 우선한다.
+2. frontmatter에 `memory: project`를 더한다.
+3. 본문에 기억 관리 문단을 더한다. 예:
+
+   ```text
+   memory
+   - 시작할 때 memory에서 이 저장소의 반복 지적·환경 함정을 확인한다.
+   - 끝낼 때 다음 실행에도 쓸 사실만 한 줄씩 더한다: 저장소에서 바로 알 수 없는 것(반복되는 실수 유형, 모듈 사이의 숨은 의존, 느린 테스트).
+   - 적지 않는다: 비밀 값·고객 정보·내부 호스트, 코드 원문, 이번 작업의 진행 상태, 작업 지시("항상 ~한다").
+   - MEMORY.md는 200줄 안의 색인으로 유지하고 세부는 주제별 파일로 나눈다. 틀린 항목은 고치지 말고 지운다.
+   - memory 디렉터리 밖의 파일은 수정하지 않는다.
+   ```
+
+운용 규칙:
+
+- 기억에는 저장소에서 알 수 없는 사실만 둔다(`core.md`의 메모리 원칙과 같다). 코드·문서·git 이력으로 확인되는 내용은 적지 않는다.
+- 기억은 근거가 아니다. 에이전트 보고의 근거는 계속 경로:라인으로 받는다.
+- `.claude/agent-memory/**`는 커밋 대상이므로 PR에서 사람이 읽는다. 지시문 형태의 항목과 비밀 값·고객명·내부 호스트는 지운다.
+- 읽기 전용 에이전트에 켰다면 위임 프롬프트에 `소유 파일 없음(읽기 전용)`을 적는다. `subagent-scope` 훅이 memory 디렉터리 밖의 수정을 알린다(memory 디렉터리의 파일은 세지 않는다).
+- `implementer`에 켰다면 정의 본문의 "에이전트 규칙 파일(.claude/**)은 위임 프롬프트에 명시된 경우에만 수정" 항목에 자기 memory 디렉터리를 예외로 적는다.
+- 메인 세션의 `autoMemoryEnabled: false`(또는 `CLAUDE_CODE_DISABLE_AUTO_MEMORY`)는 서브에이전트 memory도 끈다(공식 문서).
+- `validate.sh --project`는 `agent-memory`·`agent-memory-local` 아래 파일을 개인 설정 참조 검사에서 뺀다.
+
 ## 3. 스킬 7개 (`~/.claude/skills/`)
 
 | 명령 | 인수 | 자동 호출 | 동작 |
@@ -49,7 +87,9 @@
 - 스킬 본문이 미리 실행하는 셸 주입 명령(예: `"${CLAUDE_SKILL_DIR}/context.sh"`)은 `allowed-tools`에 같은 따옴표 형태(`'Bash("${CLAUDE_SKILL_DIR}/context.sh" *)'`, YAML 작은따옴표)와 따옴표 없는 형태를 함께 둔다. 홈 경로에 공백이 있어도 권한 검사에서 막히지 않게 하려는 것이다.
 - `allowed-tools`는 스킬을 부른 턴에만 유효하다. 사용자 응답 뒤에 실행하는 `git add`·`git commit`·`apply.sh`에는 일반 권한 프롬프트가 뜰 수 있다.
 
-## 4. 프로필 4개 (선택형 add-on, 기본 적용 없음)
+## 4. 프로필 5개 (선택형 add-on, 기본 적용 없음)
+
+언어 프로필 4개와 `sandbox` 프로필(4.1절)이다.
 
 | 프로필 | 규칙 파일 | `paths` | 내용 |
 |---|---|---|---|
@@ -66,6 +106,26 @@
   - node: `npm run typecheck *` 등 스크립트 명령과 `npx --no-install tsc *`·`eslint`·`prettier --check`·`vitest run`·`jest`. `npx <도구>`는 로컬에 없으면 레지스트리에서 받아 실행하므로 `--no-install` 형태만 허용한다.
 - `--profile auto` 매핑: `python`→python, `django`→python+django, `fastapi`→python+fastapi, `node`→node. 감지 결과가 없으면 프로필 없이 적용한다. `--profile`을 생략하면 공통 템플릿만 적용하고, 감지된 스택이 있으면 `--profile auto`가 적용할 프로필을 `힌트:` 줄로만 알린다(규칙 파일이 이미 있는 프로필은 따로 밝힌다).
 - `--profile`은 여러 번 줄 수 있다(예: `--profile python --profile django`).
+
+### 4.1 `sandbox` 프로필
+
+`apply.sh <프로젝트> --profile sandbox`는 그 프로젝트에서 Bash 명령을 OS 샌드박스(macOS Seatbelt, Linux·WSL2 bubblewrap) 안에서 실행하게 한다. 훅은 명령을 어림으로 읽지만 샌드박스는 OS가 강제하므로, 훅이 놓친 명령도 경계 밖에는 닿지 못한다. 언어와 무관하고 `--profile auto`는 고르지 않는다. 언어 프로필과 함께 줄 수 있다(`--profile python,sandbox`).
+
+프로젝트 `.claude/settings.json`에 병합하는 값(`profiles/sandbox/settings.fragment.json`):
+
+| 키 | 값 | 뜻 |
+|---|---|---|
+| `sandbox.enabled` | `true` | Bash·Monitor와 그 자식 프로세스를 샌드박스 안에서 실행한다 |
+| `sandbox.autoAllowBashIfSandboxed` | `false` | 승인 흐름을 바꾸지 않는다. 기본값 `true`는 샌드박스 안 명령을 프롬프트 없이 실행한다 |
+| `sandbox.filesystem.denyRead` | `~/.ssh` `~/.aws` `~/.config/gcloud` `~/.azure` `~/.kube` `~/.gnupg` `~/.docker/config.json` | 샌드박스 안 명령이 운영 자격 증명을 읽지 못한다 |
+| `permissions.ask` | `Bash(dangerouslyDisableSandbox:true)` | 샌드박스 밖 재실행은 `auto`·`bypassPermissions`에서도 확인받는다 |
+
+- 샌드박스의 기본 경계(공식 문서): 쓰기는 작업 디렉터리와 사용자 임시 디렉터리, 읽기는 디스크 전체, 네트워크는 허용 도메인만이다. 기본값은 자격 증명 파일 읽기를 막지 않으므로 `denyRead`를 더했다.
+- 권한 규칙도 샌드박스 경계에 합쳐진다(공식 문서): `Read(...)`·`Edit(...)` deny 규칙은 샌드박스 안 명령에도 적용되고, `Edit(...)` allow는 쓰기 허용, `WebFetch(domain:…)` allow는 허용 도메인이 된다. 전역 설정을 설치했다면 그 Read deny 목록(`.env`·키·토큰 등)이 샌드박스 안 `cat`·`grep`에도 적용된다.
+- `autoAllowBashIfSandboxed`를 `false`로 둔 이유: `true`일 때 훅의 확인 요청(ask)이 유지되는지 공식 문서에 없다. 프롬프트를 줄이려면 `true`로 바꾼다. 이때도 `Bash(...)` deny 규칙과 내용이 있는 ask 규칙(`Bash(git push *)`)은 적용된다(공식 문서).
+- 규칙 파일 `sandbox.md`(`paths` 없음, 항상 로드): 실패하면 오류 원문을 보고하고, 샌드박스 밖 재실행은 꼭 필요할 때만 요청하고, 경계를 넓히는 설정은 직접 고치지 않고 제안하게 한다.
+- 프로젝트에 `sandbox` 값이 이미 있으면 그 값을 유지하고 없는 키만 더한다(다른 프로필 조각과 같은 병합 규칙).
+- 경계를 넓히거나 좁히는 방법은 [customization.md](customization.md) 3절, 제한은 [limitations.md](limitations.md) 8절에 있다.
 
 ## 5. ECC 플러그인과의 관계
 

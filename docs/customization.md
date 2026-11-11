@@ -56,9 +56,27 @@
 
 - **프로젝트 규칙 추가**: `<프로젝트>/.claude/rules/<이름>.md`. 특정 파일에만 적용하려면 frontmatter에 `paths`를 둔다(Claude Code가 읽는 유일한 필드).
 - **전역 규칙 추가**: `claude/global/rules/`에 파일을 만들고 `./install.sh` 재실행. `~/.claude/rules/`를 직접 고치지 않는다.
-- **프로필 추가**: `profiles/<이름>/rules/<규칙>.md`(`paths` 필수, 60줄 이내)와 `profiles/<이름>/settings.fragment.json`을 만든다. `apply.sh`의 프로필 목록(인수 검사·사용법)과 `--profile auto` 매핑(`apply.sh`의 `detect_profiles`, `/harness-init` 추정은 `claude/global/skills/harness-init/context.sh`)에도 추가한다. 새 스택 토큰이 필요하면 `claude/global/hooks/lib/detect-stack.sh`를 고친다.
+- **프로필 추가**: `profiles/<이름>/rules/<규칙>.md`(언어 규칙은 `paths` 필수, 60줄 이내)와 `profiles/<이름>/settings.fragment.json`을 만든다. `apply.sh`의 프로필 목록(인수 검사·사용법)과 `--profile auto` 매핑(`apply.sh`의 `detect_profiles`, `/harness-init` 추정은 `claude/global/skills/harness-init/context.sh`)에도 추가한다. 새 스택 토큰이 필요하면 `claude/global/hooks/lib/detect-stack.sh`를 고친다.
 - **비밀 패턴**: 훅이 전체 목록을, Read deny가 그 핵심 부분집합을 강제한다.
   - 훅: `claude/global/hooks/lib/secret-patterns.txt` + `guard-secrets.sh`의 경로 규칙. Bash 명령의 사전 필터도 이 파일의 글롭을 그대로 쓰므로, 패턴을 추가하면 훅을 고치지 않아도 `cat <이름>` 같은 명령에 적용된다(`tests/hooks/test-guards-secrets-3.sh`가 모든 글롭을 Bash `cat`과 Read로 확인).
   - 네이티브: `claude/global/settings.json`의 Read deny — .env 주요 변형·키·인증서·SSH·클라우드 자격 증명·CLI 도구 토큰(gh, Vault, cargo, Terraform, Hugging Face, Azure). `.env.*` 전체를 deny하면 `.env.example`까지 막히므로 나눠 둔다. `*.env`(`prod.env` 류)도 `sample.env` 같은 예제가 막히지 않게 훅에만 둔다(`CLAUDE_GUARD_SECRET_ALLOW`로 제외 가능).
   - 훅을 끄거나(`CLAUDE_GUARD_SECRETS=off`) 훅이 fail-open이면 훅 전용 패턴(`.env.test`, `*.env`, `.env~`, `.env_*`, `*.ppk`, `.pgpass` 등)은 보호받지 못한다.
   - `.env.*`에서 제외하는 것은 `.example`·`.sample`·`.template`·`.dist`다. 한쪽을 바꾸면 다른 쪽도 검토한다.
+
+## 3. sandbox 프로필 조정
+
+`--profile sandbox`가 넣은 값은 프로젝트 `.claude/settings.json`의 `sandbox`에 있다([components.md](components.md) 4.1절). 팀 전체에 적용할 값은 그 파일에, 개인 값은 `.claude/settings.local.json`에 둔다. 경로·도메인 목록은 설정 범위(user · project · local) 사이에서 합쳐진다(공식 문서).
+
+| 하려는 일 | 설정 |
+|---|---|
+| 샌드박스와 맞지 않는 명령을 밖에서 실행 | `sandbox.excludedCommands`: `["docker"]` |
+| 프로젝트 밖 경로에 쓰기 허용 | `sandbox.filesystem.allowWrite`: `["~/.cache/uv"]` |
+| `denyRead`로 막은 경로의 일부를 다시 허용 | `sandbox.filesystem.allowRead`: `["~/.aws/config"]` |
+| 네트워크 도메인을 미리 허용 | `sandbox.network.allowedDomains`: `["pypi.org", "*.npmjs.org"]` |
+| 샌드박스 안 명령은 프롬프트 없이 실행 | `sandbox.autoAllowBashIfSandboxed`: `true` |
+| 샌드박스 밖 실행을 아예 금지 | `sandbox.allowUnsandboxedCommands`: `false` |
+| 샌드박스를 쓸 수 없으면 시작하지 않기 | `sandbox.failIfUnavailable`: `true` |
+
+- 경계를 넓히는 값(위 표의 앞 네 줄)은 필요한 항목만 넣는다. Claude가 직접 고치지 않고 제안하게 한다(`sandbox.md` 규칙).
+- `WebFetch(domain:…)` allow 규칙의 도메인은 샌드박스에서도 허용된다(공식 문서). 전역 설정의 `github.com`·`raw.githubusercontent.com` 등이 여기에 해당한다.
+- 프로필을 떼려면 `.claude/settings.json`의 `sandbox` 블록과 `permissions.ask`의 `Bash(dangerouslyDisableSandbox:true)`, `.claude/rules/sandbox.md`를 지운다. `apply.sh`는 넣은 프로필을 되돌리지 않는다.

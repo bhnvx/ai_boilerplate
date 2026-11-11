@@ -8,7 +8,7 @@
 
 - **Bash 권한 규칙과 훅은 보안 경계가 아니다.** 네이티브 `Bash(...)` 접두사 규칙은 `/bin/rm`, `bash -c '…'`, `git -C . push`로 우회된다.
 - 가드 훅은 이를 보완하는 휴리스틱 파서(따옴표·heredoc·셸 문자열을 정해진 깊이까지만 푼다)라 변수 조합·스크립트 내부·인코딩으로 우회할 수 있다.
-- 확실한 경계가 필요하면 sandbox를 쓴다.
+- 확실한 경계가 필요하면 sandbox 프로필(`apply.sh --profile sandbox`, [components.md](components.md) 4.1절)을 쓴다.
 - **fail-open**: 파서(`jq`/`python3`)가 없거나 훅이 실패하면 통과한다.
   - 핸들러에 `"onFailure": "block"`(2.1.295+)을 추가하면 런처를 시작하지 못할 때, 훅이 timeout(10초)을 넘길 때, 출력 JSON이 깨졌을 때 도구 호출이 막힌다.
   - 런처가 항상 exit 0이므로 훅 내부 오류는 여전히 통과하고, `jq`/`python3`가 없을 때도 결정 없이 통과(fail-open)한다.
@@ -132,3 +132,28 @@
 - 스키마 스냅샷에 문서화된 키 일부(`modelSettings` 등 약 48개)가 없다. 스키마가 `additionalProperties: true`라 오류는 아니며, `validate.sh`는 알려진 키를 예외로 두고 나머지를 WARN으로 알린다.
 - `--link`(심볼릭 링크 설치) 모드는 없다. 저장소를 고친 뒤 `./install.sh`를 다시 실행한다.
 - Windows는 검증하지 않았다.
+
+## 8. sandbox 프로필 · 플러그인 · 에이전트 memory · `.worktreeinclude`
+
+### 8.1 sandbox 프로필
+
+- **실제 세션에서 실행해 보지 않았다.** 값은 공식 문서와 스키마 스냅샷 기준이고, 테스트는 `apply.sh`의 병합 결과만 확인한다.
+- 샌드박스는 Bash·Monitor와 그 자식 프로세스에만 적용된다. Read·Edit·Write·WebFetch 도구, 훅, MCP 서버, 상태줄 명령에는 적용되지 않는다(공식 문서). 이쪽은 권한 규칙과 훅이 맡는다.
+- 네이티브 Windows는 샌드박스를 지원하지 않고, Linux·WSL2는 `bubblewrap`·`socat`이 있어야 한다. 쓸 수 없으면 경고만 하고 샌드박스 없이 실행한다(`sandbox.failIfUnavailable` 기본값 `false`).
+- 샌드박스 안에서 실패할 수 있는 도구(공식 문서): docker, SSH 원격을 쓰는 git(macOS), `gh`·`gcloud`·`terraform` 같은 Go CLI(macOS), watchman(`jest --no-watchman`으로 피한다), 클립보드 도구.
+- 전역 설정의 Read deny(`~/.npmrc`·`~/.netrc`·`.env` 등)가 샌드박스 안 명령에도 적용된다. 이 파일을 읽어야 하는 도구(사설 레지스트리를 쓰는 npm·pip 등)는 샌드박스 안에서 실패할 수 있다.
+- `sandbox.filesystem.*` 경로의 글롭이 Linux에서도 되는지 공식 문서에 없다. 프로필은 글롭 없는 경로만 쓴다.
+- `autoAllowBashIfSandboxed: true`일 때 훅의 확인 요청(ask)이 유지되는지 공식 문서에 없다. 프로필은 `false`로 둔다.
+- 프로젝트에 `sandbox` 값이 이미 있으면(예: `enabled: false`) `--profile sandbox`가 바꾸지 않는다.
+
+### 8.2 플러그인 배포판
+
+- **실제 세션에서 확인하지 않았다.** `claude plugin validate`와 로컬 marketplace 설치(구성 요소 인식)까지만 확인했다.
+- 플러그인 훅에서 Stop·SubagentStop이 발화하는지는 공식 문서에 따로 적혀 있지 않다(이벤트 목록에는 있고 플러그인 제한은 언급되지 않는다).
+- 규칙·권한 규칙·상태줄이 없고, `install.sh` 설치와 함께 쓰면 훅이 두 번 실행된다([install.md](install.md) 5절).
+- 저장소에 LICENSE 파일이 없다. 공식 플러그인 디렉터리에 제출하려면 LICENSE나 `plugin.json`의 `license`가 필요하다(`claude plugin validate`의 안내).
+
+### 8.3 에이전트 memory · `.worktreeinclude`
+
+- 에이전트 `memory`와 `tools` 제한 · `omitClaudeMd` · `isolation: worktree`의 상호작용은 공식 문서에 없다([components.md](components.md) 2.1절).
+- `.worktreeinclude`는 WorktreeCreate 훅을 직접 쓰는 프로젝트에서는 처리되지 않는다(공식 문서). 수동 `git worktree add`에 적용되는지는 문서에 없다.

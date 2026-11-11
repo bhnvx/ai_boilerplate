@@ -9,7 +9,7 @@ Claude Code 전역 하네스(설정·훅·규칙·에이전트·스킬)와 프�
 | 위험한 동작을 막거나 실행 전에 확인받는다 | 가드 훅 3개: 비밀 파일 · 위험 명령 · 마이그레이션 |
 | 놓치기 쉬운 것을 알려 준다 | 알림 훅 2개(검증 없는 완료 보고 · 서브에이전트의 범위 밖 수정), 세션 시작 컨텍스트, 상태줄 |
 | 작업 방식을 맞춘다 | 규칙 5개, 에이전트 3개, 스킬 7개 |
-| 프로젝트마다 같은 틀을 적용한다 | 프로젝트 템플릿과 선택형 프로필(`python` · `django` · `fastapi` · `node`) |
+| 프로젝트마다 같은 틀을 적용한다 | 프로젝트 템플릿과 선택형 프로필(`python` · `django` · `fastapi` · `node` · `sandbox`) |
 
 설치하면 이렇게 달라진다.
 
@@ -38,6 +38,13 @@ cd ~/vsc/dev_settings
 5. 커밋할 파일만 커밋한다([install.md](docs/install.md) 4절).
 
 필요한 도구는 `python3` 3.8+와 `git`이다. `jq`는 있으면 쓰고 없으면 `python3`로 대신한다.
+
+저장소를 받지 않고 훅·에이전트·스킬만 쓰려면 Claude Code 세션에서 플러그인으로 설치한다. 규칙·권한 규칙·상태줄은 들어가지 않고, `install.sh`와 함께 쓰지 않는다([install.md](docs/install.md) 5절).
+
+```
+/plugin marketplace add bhnvx/ai_boilerplate
+/plugin install dev-settings@dev-settings
+```
 
 ## 3. 구성 요소
 
@@ -106,9 +113,12 @@ cd ~/vsc/dev_settings
 
 ### 3.4 프로필과 프로젝트 템플릿
 
-- `apply.sh`는 프로젝트에 `CLAUDE.md`, `.claude/settings.json`, `.claude/rules/project.md`를 만들고 `.gitignore`에 필요한 줄을 더한다. 이미 있는 `CLAUDE.md`는 그대로 두고 `settings.json`은 병합한다.
+- `apply.sh`는 프로젝트에 `CLAUDE.md`, `.claude/settings.json`, `.claude/rules/project.md`, `.worktreeinclude`를 만들고 `.gitignore`에 필요한 줄을 더한다. 이미 있는 `CLAUDE.md`는 그대로 두고 `settings.json`은 병합한다.
 - 프로필은 기본으로 적용하지 않는다. `--profile <이름>`이나 `--profile auto`(스택 감지)를 줄 때만 그 언어의 규칙 파일과 검사·테스트 명령 allow를 더한다.
-- 프로필 규칙은 해당 파일(`**/*.py` 등)을 읽거나 고칠 때만 로드된다.
+- 언어 프로필 규칙은 해당 파일(`**/*.py` 등)을 읽거나 고칠 때만 로드된다.
+- `--profile sandbox`는 그 프로젝트의 Bash 명령을 OS 샌드박스 안에서 실행하게 한다. 쓰기는 프로젝트 디렉터리로 한정되고, SSH·클라우드 자격 증명 경로를 읽지 못하고, 샌드박스 밖 재실행은 확인받는다. 언어 프로필과 함께 줄 수 있고 `auto`는 고르지 않는다.
+- `.worktreeinclude`는 Claude Code가 워크트리를 만들 때 `CLAUDE.local.md`와 `.claude/settings.local.json`을 함께 복사하게 한다. `.env`는 기본으로 넣지 않는다.
+- 에이전트 `memory`는 기본으로 켜지 않는다. 켜는 방법과 운용 규칙은 [docs/components.md](docs/components.md) 2.1절에 있다.
 
 ## 4. 자주 쓰는 설정
 
@@ -164,7 +174,8 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 
 ## 7. 알아 둘 제한
 
-- **훅은 보안 경계가 아니다.** 명령을 어림으로 읽는 파서라 변수 조합·스크립트 내부·인코딩으로 우회할 수 있다. 확실한 경계가 필요하면 sandbox를 쓴다.
+- **훅은 보안 경계가 아니다.** 명령을 어림으로 읽는 파서라 변수 조합·스크립트 내부·인코딩으로 우회할 수 있다. 확실한 경계가 필요하면 sandbox 프로필(`apply.sh --profile sandbox`)을 쓴다.
+- sandbox 프로필과 플러그인 배포판은 설정 검증까지만 했고 실제 세션에서 실행해 보지 않았다.
 - 훅이 실패하거나 제한 시간(10초)을 넘기면 막지 않고 통과한다.
 - 아주 큰 명령은 끝까지 분석하지 않고 `too-complex`로 확인을 요청한다(서브에이전트는 차단).
 - Read deny가 Write·Edit도 막으므로 Claude가 `.env`를 직접 만들 수 없다. `cp .env.example .env`를 쓰거나 사용자가 만든다.
@@ -178,9 +189,9 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 | 문서 | 내용 |
 |---|---|
 | [docs/hooks.md](docs/hooks.md) | 훅 목록, 판정 단계, 명령을 읽는 방법, 가드별 판정 세부, 알림 훅 |
-| [docs/components.md](docs/components.md) | 규칙·에이전트·스킬·프로필 상세, ECC 플러그인과의 관계 |
-| [docs/install.md](docs/install.md) | `install.sh`·`apply.sh` 동작, 전역 `settings.json`, 프로젝트 템플릿 |
-| [docs/customization.md](docs/customization.md) | env 변수 전체, 규칙·프로필·비밀 패턴 추가 |
+| [docs/components.md](docs/components.md) | 규칙·에이전트(memory 운용 포함)·스킬·프로필(sandbox 포함) 상세, ECC 플러그인과의 관계 |
+| [docs/install.md](docs/install.md) | `install.sh`·`apply.sh` 동작, 전역 `settings.json`, 프로젝트 템플릿, 플러그인 배포판 |
+| [docs/customization.md](docs/customization.md) | env 변수 전체, 규칙·프로필·비밀 패턴 추가, sandbox 조정 |
 | [docs/limitations.md](docs/limitations.md) | 알려진 제한 전체 |
 | [docs/development.md](docs/development.md) | 저장소 구조, 테스트·검증·CI, 파일 이력 |
 
@@ -188,8 +199,8 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 
 | 항목 | 기준 |
 |---|---|
-| Claude Code | 2.1.318 (VS Code 확장, macOS) |
-| 공식 문서 확인일 | 2026-11-05 (code.claude.com). Stop·SubagentStop 훅은 2026-11-11 |
+| Claude Code | 2.1.318 (VS Code 확장, macOS). 플러그인 매니페스트는 2.1.322의 `claude plugin validate` |
+| 공식 문서 확인일 | 2026-11-05 (code.claude.com). Stop·SubagentStop 훅, sandbox, 플러그인, 서브에이전트 memory, `.worktreeinclude`는 2026-11-11 |
 | 설정 스키마 스냅샷 | 2026-11-05 (`schemas/claude-code-settings.schema.json`, json.schemastore.org) |
 | 셸 | `/bin/bash` 3.2 호환(bash 5에서도 테스트), BSD/GNU 도구 공통 |
 | 필수 도구 | `python3` 3.8+ (install·apply·validate), `git` |
@@ -198,7 +209,7 @@ bash scripts/validate.sh --repo --quiet     # 저장소 구성 검사
 
 ## 10. 다음 단계
 
-- sandbox 프로필(파일·네트워크 경계)
-- 에이전트 memory(`memory: project`) 운용 지침
-- 플러그인 패키징(마켓플레이스 배포)
-- `.worktreeinclude` 지원 검토(워크트리 생성 시 gitignore된 로컬 파일 복사)
+- sandbox 프로필 실측: macOS(Seatbelt)와 Linux(bubblewrap)의 실제 세션에서 경계와 승인 흐름 확인
+- 플러그인 배포판 실측: 실제 세션에서 훅 발화와 이름공간이 붙은 스킬·에이전트 동작 확인
+- 플러그인 배포판에 규칙을 싣는 방법(플러그인은 `rules/`를 실을 수 없다)
+- LICENSE 추가(없으면 공식 플러그인 디렉터리에 제출할 수 없다)
